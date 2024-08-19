@@ -1,0 +1,72 @@
+﻿@page "/book"
+@page "/book/{idEdit:int}"
+@using SharedClassLibrary.Contracts
+@using SharedClassLibrary.DTOs
+@inject IBooks BookService
+@inject IAuthors AuthorService
+@inject NavigationManager navigation;
+<PageTitle>Book</PageTitle>
+
+@if (book == null)
+{
+    <p><em>Retrieving the book...</em></p>
+}
+else
+{
+
+    //<form>
+    <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="book.Title"></InputText>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Author</label>
+            <InputSelect class="form-control" @bind-Value="book.AuthorId" >
+                <option value="0">-- SELECT --</option>
+                @foreach (var author in authors)
+                {
+                    <option value="@author.Id">@author.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </EditForm>
+}
+
+@code {
+
+    [Parameter]
+    public int idEdit { get; set; } = 0;
+    SharedClassLibrary.DTOs.BookDTO book = new();
+
+    List<AuthorDTO> authors = new List<AuthorDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (idEdit != 0)
+        {
+            book = await BookService.GetBook(idEdit);
+        }
+        else
+        {
+            book = new();
+        }
+       authors = await AuthorService.GetAuthors();
+    }
+
+    private async void OnValidSubmit()
+    {
+        if (idEdit != 0)
+        {
+            await BookService.UpdateBook(idEdit, book);
+        }
+        else
+        {
+            await BookService.AddBook(book);
+        }
+        navigation.NavigateTo("/books");
+    }
+}

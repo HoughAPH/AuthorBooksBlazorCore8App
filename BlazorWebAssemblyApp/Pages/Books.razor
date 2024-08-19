@@ -1,0 +1,106 @@
+﻿@page "/books"
+@page "/books/{authorId:int}"
+@using Blazored.LocalStorage
+@using SharedClassLibrary.Contracts
+@using SharedClassLibrary.DTOs
+@using CurrieTechnologies.Razor.SweetAlert2
+@inject ILocalStorageService LocalStorageService
+@inject IBooks BookService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject SweetAlertService Swal;
+
+<PageTitle>Books</PageTitle>
+
+<button class="btn btn-primary" disabled=@(role != "Admin") @onclick="@(() => NavigateToBookPage(0))">
+    Create New
+</button>
+
+@if (books == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table-primary">
+        <thead>
+            <tr>
+              @*   <th>Id</th> *@
+                <th>Title</th>
+                <th>Author Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in books)
+            {
+                <tr>
+                    @* <td>@book.Id</td> *@
+                    <td>@book.Title</td>
+                    <td>@book.AuthorName</td>
+                    <td>
+                        <button type="button" class="btn btn-primary" disabled=@(role != "Admin") @onclick="@(() => NavigateToBookPage(book.Id))">
+                            <i class="oi oi-pencil">Edit</i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm ms-2" disabled=@(role != "Admin") @onclick="@(async() => await  Delete(book))">
+                            <i class="oi oi-trash">Delete</i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public int authorId { get; set; } = 0;
+    private string role = string.Empty;
+    private IEnumerable<BookDTO>? books;
+    // private SharedClassLibrary.DTOs.Author author = new();
+    protected override async Task OnInitializedAsync()
+    {
+        role = await LocalStorageService.GetItemAsStringAsync("Role");
+        // if(string.IsNullOrEmpty(role))
+        // {
+        //     NavigationManager.NavigateTo("/login");
+        // }
+
+        if (authorId != 0)
+        {
+            books = await BookService.GetAuthorBooks(authorId);
+        }
+        else
+        {
+            books = await BookService.GetBooks();
+        }
+    }
+
+    private async Task Delete(BookDTO book)
+    {
+        //bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Delete Book",
+                Text = "Do you want to delete the book?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true
+            });
+
+        if (result.IsConfirmed)
+        {
+            await BookService.DeleteBook(book.Id);
+            books = await BookService.GetBooks();
+        }
+    }
+    private void NavigateToBookPage(int bookId)
+    {
+        if(bookId == 0)
+        {
+            NavigationManager.NavigateTo("/book");
+        }
+        else
+        {
+            NavigationManager.NavigateTo($"/book/{bookId}");
+        }
+    }
+}

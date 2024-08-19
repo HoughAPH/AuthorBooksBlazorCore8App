@@ -1,0 +1,106 @@
+﻿@page "/authors"
+@using BlazorWebAssemblyApp.Services
+@using Blazored.LocalStorage
+@using SharedClassLibrary.Contracts
+@using SharedClassLibrary.DTOs
+@using SharedClassLibrary.GenericModels
+@inject IAuthors AuthorsService
+@inject SweetAlertService Swal
+@inject ILocalStorageService LocalStorageService
+@inject NavigationManager Navigation
+
+<PageTitle>Authors</PageTitle>
+
+
+<button class="btn btn-primary" disabled=@(role != "Admin") @onclick="NavigateToAuthorPage">
+    Create New
+</button>
+
+<table class="table-bordered">
+    <tbody>
+        @if (authors == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+            foreach (var author in authors)
+            {
+                <tr>
+                    <td>@author.Name</td>
+                    <td>
+                        <button type="button" class="btn btn-primary" disabled=@(role != "Admin") @onclick="@(() => NavigateToEditAuthorPage(author.Id))">
+                            <i class="oi oi-pencil">Edit</i>
+                        </button>
+                        <button id="DeleteAuthor" type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async() => await  Delete(author.Id))" disabled=@(role != "Admin")>
+                            <i class="oi oi-trash">Delete</i>
+                        </button>
+                        <a class="btn btn-primary btn-sm" href="Books/@author.Id">
+                            <i class="oi oi-pencil">Author Books</i>
+                        </a>
+
+                    </td>
+
+
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+
+    List<AuthorDTO> authors = new();
+    private string role = string.Empty;
+    string MyErrorMessage { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        //  string token = await LocalStorageService.GetItemAsStringAsync("token");
+        role = await LocalStorageService.GetItemAsStringAsync("Role");
+        // UserSession claims = Generics.GetClaimsFromToken(token);
+        //role = claims.Role;
+
+        authors = await AuthorsService.GetAuthors();
+    }
+
+
+
+    private async Task Delete(int id)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Delete Autor",
+                Text = "Do you want to delete the Autor?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true
+            });
+
+        if (result.IsConfirmed)
+        {
+            var response = await AuthorsService.DeleteAuthor(id);
+            if (string.IsNullOrEmpty(response))
+                authors = authors.FindAll(a => a.Id != id);//await AuthorsService.GetAuthors();
+            else
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Error deleting Author",
+                        Text = "The Author has books.  ",
+                        Icon = SweetAlertIcon.Warning,
+                        ShowCancelButton = false
+
+                    });
+            }
+        }
+    }
+    private void NavigateToEditAuthorPage(int authorId)
+    {
+        Navigation.NavigateTo($"/author/{authorId}");
+    }
+
+    private void NavigateToAuthorPage()
+    {
+        Navigation.NavigateTo("/author");
+    }
+}
+
