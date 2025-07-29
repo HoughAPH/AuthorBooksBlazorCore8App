@@ -1,10 +1,14 @@
 ﻿@page "/book"
 @page "/book/{idEdit:int}"
+@using Blazored.LocalStorage
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
+@using Microsoft.AspNetCore.Components.Forms
 @inject IBooks BookService
 @inject IAuthors AuthorService
 @inject NavigationManager navigation;
+@inject ILocalStorageService LocalStorageService
+
 <PageTitle>Book</PageTitle>
 
 @if (book == null)
@@ -13,48 +17,61 @@
 }
 else
 {
-
-    //<form>
-    <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <div class="mb-3">
-            <label class="form-label">Title</label>
-            <InputText class="form-control" @bind-Value="book.Title"></InputText>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">@headerTitle</h3>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            <div class="mb-3">
+                                <label for="BookTitle" class="form-label fw-bold">Title</label>
+                                <Microsoft.AspNetCore.Components.Forms.InputText id="BookTitle" class="form-control" @bind-Value="book.Title"></Microsoft.AspNetCore.Components.Forms.InputText>
+                            </div>
+                            <div class="mb-3">
+                                <label for="BookAuthor" class="form-label fw-bold">Author</label>
+                                <InputSelect id="BookAuthor" class="form-control" @bind-Value="book.AuthorId">
+                                    <option value="0">-- SELECT --</option>
+                                    @foreach (var author in authors)
+                                    {
+                                        <option value="@author.Id">@author.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Author</label>
-            <InputSelect class="form-control" @bind-Value="book.AuthorId" >
-                <option value="0">-- SELECT --</option>
-                @foreach (var author in authors)
-                {
-                    <option value="@author.Id">@author.Name</option>
-                }
-            </InputSelect>
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-    </EditForm>
+    </div>
 }
 
 @code {
-
     [Parameter]
     public int idEdit { get; set; } = 0;
     SharedClassLibrary.DTOs.BookDTO book = new();
+    string headerTitle = "Create New Book";
 
     List<AuthorDTO> authors = new List<AuthorDTO>();
 
     protected override async Task OnInitializedAsync()
     {
+        string role = await LocalStorageService.GetItemAsStringAsync("Role");
         if (idEdit != 0)
         {
             book = await BookService.GetBook(idEdit);
+            headerTitle = "Edit Book Details";
         }
         else
         {
             book = new();
         }
-       authors = await AuthorService.GetAuthors();
+        authors = await AuthorService.GetAuthors();
     }
 
     private async void OnValidSubmit()

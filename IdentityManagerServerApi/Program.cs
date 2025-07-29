@@ -1,3 +1,4 @@
+using BlazorWebAssemblyApp.Pages;
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Repositories;
@@ -59,6 +60,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
 builder.Services.AddScoped<IUserAccount, AccountRepository>();
+builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
+
 // JWT 
 builder.Services.AddAuthentication(options =>
 {

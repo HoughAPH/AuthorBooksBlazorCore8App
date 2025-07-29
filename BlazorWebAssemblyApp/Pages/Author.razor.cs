@@ -8,11 +8,14 @@ namespace BlazorWebAssemblyApp.Pages
         [Parameter]
         public int idEdit { get; set; } = 0;
         private SharedClassLibrary.DTOs.AuthorDTO author = new();
+        string headerTitle = "Create New Author";
+
 
         protected override async Task OnInitializedAsync()
         {
             if (idEdit != 0)
             {
+                headerTitle = "Edit Author Details";
                 author = await AuthorsService.GetAuthor(idEdit);
             }
             else

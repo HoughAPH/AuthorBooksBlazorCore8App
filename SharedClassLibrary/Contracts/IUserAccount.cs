@@ -6,5 +6,9 @@ namespace SharedClassLibrary.Contracts
     {
         Task<GeneralResponse> CreateAccount(UserDTO userDTO);
         Task<LoginResponse> LoginAccount(LoginDTO loginDTO);
+        //Task<(bool, string)> ResetPassword(ResetPasswordDTO user, string token, string password);
+        Task<(bool, string)> ResetPassword(ResetPasswordDTO user);
+        Task<(bool, string)> ForgotPassword(ForgotPasswordDTO user);
+
     }
 }

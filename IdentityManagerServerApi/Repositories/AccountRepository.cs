@@ -65,6 +65,33 @@ namespace IdentityManagerServerApi.Repositories
             string token = Generics.GenerateJwtToken(userSession, config["Jwt:Key"], config["Jwt:Issuer"], config["Jwt:Audience"]);  //GenerateToken(userSession);
             return new LoginResponse(true, token!, "Login completed");
         }
+        public async Task<(bool, string)> ResetPassword(ResetPasswordDTO user)
+        {
+            if (user == null) return (false, "User data is empty");
+
+            var getUser = await userManager.FindByEmailAsync(user.Email);
+            if (getUser == null) return (false, "User not found");
+
+            var resetPassResult = await userManager.ResetPasswordAsync(getUser, user.Token, user.Password);
+            if (!resetPassResult.Succeeded) return (false, "Error resetting password");
+
+            return (true, "Password reset successful");
+        }
+
+        public async Task<(bool, string)> ForgotPassword(ForgotPasswordDTO user)
+        {
+            if (user == null) return (false, "User data is empty");
+
+            var getUser = await userManager.FindByEmailAsync(user.Email);
+            if (getUser == null) return (false, "User not found");
+            var getUserRole = await userManager.GetRolesAsync(getUser);
+            var userSession = new UserSession(getUser.Id, getUser.Name, getUser.Email, getUserRole.First());
+            string token = Generics.GenerateJwtToken(userSession, config["Jwt:Key"], config["Jwt:Issuer"], config["Jwt:Audience"]);
+            //var token = await userManager.GeneratePasswordResetTokenAsync(getUser);
+            // Here you would typically send the token to the user's email
+            // For simplicity, we are returning the token in the response
+            return (true, token);
+        }
 
         //private string GenerateToken(UserSession user)
         //{

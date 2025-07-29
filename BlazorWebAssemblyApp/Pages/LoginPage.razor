@@ -14,7 +14,7 @@
             <EditForm Enhance Model="User" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
-                <div class="card-header">Login An Account</div>
+                <div class="card-header fw-bold">Login to your Account</div>
                 <div class="card-body">
 
                     @* Email Address *@
@@ -23,7 +23,7 @@
                                class="form-control"
                                type="email"
                                placeholder="Email Address">
-                        </input>
+                        
                     </div>
 
                     @* Password *@
@@ -43,6 +43,10 @@
                             type="submit">
                         Login
                     </button>
+                    <div>Forgot password
+                        <a href="/ForgotPassword">Click here</a>
+                    </div>
+
                 </div>
             </EditForm>
         </div>
