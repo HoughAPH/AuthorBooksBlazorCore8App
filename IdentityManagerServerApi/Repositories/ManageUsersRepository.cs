@@ -8,41 +8,44 @@ using System.Threading.Tasks;
 
 namespace IdentityManagerServerApi.Repositories
 {
-    public class ManageUsersRepository(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) : IManageUsers
+    public class ManageUsersRepository(
+        UserManager<ApplicationUser> userManager,
+        AppDbContext dbContext) : IManageUsers
     {
-        //private readonly UserManager<ApplicationUser> userManager;
-        //private readonly RoleManager<IdentityRole> _roleManager;
-
-        //public ManageUsersRepository(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
-        //{
-        //    userManager = userManager;
-        //    _roleManager = roleManager;
-        //}
-
         public async Task<List<ManageUserDTO>> GetUsers()
         {
-            var users = await userManager.Users.ToListAsync();
-            var userList = new List<ManageUserDTO>();
-
-            foreach (var user in users)
-            {
-                var roles = await userManager.GetRolesAsync(user);
-                userList.Add(new ManageUserDTO
+            var usersWithRoles = await (
+                from user in dbContext.Users
+                join userRole in dbContext.UserRoles on user.Id equals userRole.UserId into userRoles
+                from userRole in userRoles.DefaultIfEmpty()
+                join role in dbContext.Roles on userRole.RoleId equals role.Id into roles
+                from role in roles.DefaultIfEmpty()
+                select new
                 {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Email = user.Email,
-                    Role = string.Join(", ", roles)
-                });
-            }
+                    user.Id,
+                    user.Name,
+                    user.Email,
+                    RoleName = role != null ? role.Name : null
+                })
+                .ToListAsync();
 
-            return userList;
+            return [.. usersWithRoles
+                .GroupBy(x => new { x.Id, x.Name, x.Email })
+                .Select(g => new ManageUserDTO
+                {
+                    Id = g.Key.Id,
+                    Name = g.Key.Name ?? string.Empty,
+                    Email = g.Key.Email ?? string.Empty,
+                    Role = string.Join(", ",
+                        g.Where(x => !string.IsNullOrWhiteSpace(x.RoleName))
+                         .Select(x => x.RoleName))
+                })];
         }
 
         public async Task UpdateUserRole(string userId, string role)
         {
             var user = await userManager.FindByIdAsync(userId);
-            if (user != null)
+            if (user is not null)
             {
                 var currentRoles = await userManager.GetRolesAsync(user);
                 await userManager.RemoveFromRolesAsync(user, currentRoles);
@@ -53,7 +56,7 @@ namespace IdentityManagerServerApi.Repositories
         public async Task DeleteUser(string userId)
         {
             var user = await userManager.FindByIdAsync(userId);
-            if (user != null)
+            if (user is not null)
             {
                 await userManager.DeleteAsync(user);
             }

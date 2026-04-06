@@ -1,4 +1,3 @@
-using BlazorWebAssemblyApp.Pages;
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Repositories;
@@ -6,7 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
+//using Microsoft.OpenApi.Models;
 using Serilog;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.Repositories;
@@ -14,6 +14,10 @@ using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? ["https://localhost:7254"];
 
 // Add services to the container.
 
@@ -28,12 +32,8 @@ builder.Services.AddEndpointsApiExplorer();
 //    //.WriteTo.BrowserHttp(endpointUrl: $"{builder.HostEnvironment.BaseAddress}ingest", controlLevelSwitch: levelSwitch)
 //    .CreateLogger();
 
-var configuration = new ConfigurationBuilder()
-.AddJsonFile("appsettings.json")
-.Build();
-
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(configuration)
+    .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
 //Starting
@@ -59,7 +59,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
-builder.Services.AddScoped<IUserAccount, AccountRepository>();
+builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
 
 // JWT 
@@ -85,11 +85,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("BlazorWebassembly", builder =>
+    options.AddPolicy("BlazorWebassembly", policy =>
     {
-        builder.WithOrigins("https://localhost:7254")
-               .WithMethods("GET", "POST", "DELETE", "PUT", "HEAD")
-               .AllowAnyHeader();
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "DELETE", "PUT", "HEAD")
+              .AllowAnyHeader();
     });
 });
 

@@ -1,10 +1,8 @@
 using Blazored.LocalStorage;
 using SharedClassLibrary.Contracts;
-using SharedClassLibrary.GenericModels;
 using SharedClassLibrary.DTOs;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
+using SharedClassLibrary.GenericModels;
+using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services
 {
@@ -22,10 +20,10 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<List<ManageUserDTO>> GetUsers()
         {
-            var response = await httpClient.GetAsync($"{BaseUrl}/get-users");
+            await SetAuthorizationHeaderAsync();
 
-            if (!response.IsSuccessStatusCode)
-                return new List<ManageUserDTO>();
+            var response = await httpClient.GetAsync($"{BaseUrl}/get-users");
+            response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
             return Generics.DeserializeJsonString<List<ManageUserDTO>>(apiResponse);
@@ -33,20 +31,37 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task UpdateUserRole(string userId, string role)
         {
-            var updateUserRoleDTO = new UpdateUserRoleDTO { UserId = userId, Role = role };
-            var response = await httpClient.PostAsync($"{BaseUrl}/update-user-role",
+            await SetAuthorizationHeaderAsync();
+
+            var updateUserRoleDTO = new UpdateUserRoleDTO
+            {
+                UserId = userId,
+                Role = role
+            };
+
+            var response = await httpClient.PostAsync(
+                $"{BaseUrl}/update-user-role",
                 Generics.GenerateStringContent(Generics.SerializeObj(updateUserRoleDTO)));
 
-            if (!response.IsSuccessStatusCode)
-                throw new HttpRequestException("Error updating user role.");
+            response.EnsureSuccessStatusCode();
         }
 
         public async Task DeleteUser(string userId)
         {
-            var response = await httpClient.DeleteAsync($"{BaseUrl}/delete-user/{userId}");
+            await SetAuthorizationHeaderAsync();
 
-            if (!response.IsSuccessStatusCode)
-                throw new HttpRequestException("Error deleting user.");
+            var response = await httpClient.DeleteAsync($"{BaseUrl}/delete-user/{userId}");
+            response.EnsureSuccessStatusCode();
+        }
+
+        private async Task SetAuthorizationHeaderAsync()
+        {
+            var token = await localStorageService.GetItemAsStringAsync("token");
+            token = token?.Trim('"');
+
+            httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
+                ? null
+                : new AuthenticationHeaderValue("Bearer", token);
         }
     }
 }

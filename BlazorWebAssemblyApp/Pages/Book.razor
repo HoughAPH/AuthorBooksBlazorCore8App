@@ -1,13 +1,13 @@
 ﻿@page "/book"
-@page "/book/{idEdit:int}"
-@using Blazored.LocalStorage
+@page "/book/{IdEdit:int}"
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
 @inject IBooks BookService
 @inject IAuthors AuthorService
-@inject NavigationManager navigation;
-@inject ILocalStorageService LocalStorageService
+@inject NavigationManager Navigation
 
 <PageTitle>Book</PageTitle>
 
@@ -25,7 +25,7 @@ else
                         <h3 class="card-title">@headerTitle</h3>
                     </div>
                     <div class="card-body">
-                        <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmit">
+                        <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmitAsync">
                             <DataAnnotationsValidator />
                             <ValidationSummary />
                             <div class="mb-3">
@@ -53,37 +53,44 @@ else
 
 @code {
     [Parameter]
-    public int idEdit { get; set; } = 0;
-    SharedClassLibrary.DTOs.BookDTO book = new();
-    string headerTitle = "Create New Book";
+    public int IdEdit { get; set; } = 0;
 
-    List<AuthorDTO> authors = new List<AuthorDTO>();
+    private BookDTO? book;
+    private string headerTitle = "Create New Book";
+    private List<AuthorDTO> authors = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        string role = await LocalStorageService.GetItemAsStringAsync("Role");
-        if (idEdit != 0)
+        if (IdEdit != 0)
         {
-            book = await BookService.GetBook(idEdit);
+            book = await BookService.GetBook(IdEdit);
             headerTitle = "Edit Book Details";
         }
         else
         {
             book = new();
+            headerTitle = "Create New Book";
         }
+
         authors = await AuthorService.GetAuthors();
     }
 
-    private async void OnValidSubmit()
+    private async Task OnValidSubmitAsync()
     {
-        if (idEdit != 0)
+        if (book is null)
         {
-            await BookService.UpdateBook(idEdit, book);
+            return;
+        }
+
+        if (IdEdit != 0)
+        {
+            await BookService.UpdateBook(IdEdit, book);
         }
         else
         {
             await BookService.AddBook(book);
         }
-        navigation.NavigateTo("/books");
+
+        Navigation.NavigateTo("/books");
     }
 }

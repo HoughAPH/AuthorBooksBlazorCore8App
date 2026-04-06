@@ -1,22 +1,22 @@
 ﻿@page "/usermanager"
-@using Blazored.LocalStorage
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
 @inject IManageUsers ManageUsersService
-@inject ILocalStorageService LocalStorageService
 @inject SweetAlertService Swal
-@inject NavigationManager Navigation
 
 <PageTitle>Manage Users</PageTitle>
 
-@if (role != "Admin")
+@if (users is null)
 {
-    <p>You do not have permission to view this page.</p>
+    <p><em>Loading...</em></p>
 }
 else
 {
     <div class="container mt-5">
         <h3 class="mb-4">Manage Users</h3>
+
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -27,31 +27,26 @@ else
                 </tr>
             </thead>
             <tbody>
-                @if (users == null)
+                @foreach (var user in users)
                 {
                     <tr>
-                        <td colspan="4"><em>Loading...</em></td>
+                        <td>@user.Name</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <select class="form-control"
+                                    value="@user.Role"
+                                    @onchange="@(async e => await OnRoleChangedAsync(user, e.Value?.ToString() ?? user.Role))">
+                                <option value="User">User</option>
+                                <option value="Author">Author</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" @onclick="@(async () => await DeleteUserAsync(user.Id))">
+                                Delete
+                            </button>
+                        </td>
                     </tr>
-                }
-                else
-                {
-                    @foreach (var user in users)
-                    {
-                        <tr>
-                            <td>@user.Name</td>
-                            <td>@user.Email</td>
-                            <td>
-                                <InputSelect class="form-control" @bind-Value="user.Role" @onchange="@(async (e) => await UpdateUserRole(user))">
-                                    <option value="User">User</option>
-                                    <option value="Author">Author</option>
-                                    <option value="Admin">Admin</option>
-                                </InputSelect>
-                            </td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" @onclick="@(async () => await DeleteUser(user.Id))">Delete</button>
-                            </td>
-                        </tr>
-                    }
                 }
             </tbody>
         </table>
@@ -59,50 +54,63 @@ else
 }
 
 @code {
-    private string role = string.Empty;
-    private List<ManageUserDTO> users = new();
+    private List<ManageUserDTO>? users;
 
     protected override async Task OnInitializedAsync()
     {
-        role = await LocalStorageService.GetItemAsStringAsync("Role");
-        if (role == "Admin")
-        {
-            users = await ManageUsersService.GetUsers();
-        }
+        await LoadUsersAsync();
     }
 
-    private async Task UpdateUserRole(ManageUserDTO user)
+    private async Task LoadUsersAsync()
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Update User Role",
-                Text = $"Are you sure you want to change the role of {user.Name} to {user.Role}?",
-                Icon = SweetAlertIcon.Question,
-                ShowCancelButton = true
-            });
-
-        if (result.IsConfirmed)
-        {
-            await ManageUsersService.UpdateUserRole(user.Id, user.Role);
-            await Swal.FireAsync("Success", "User role updated successfully.", SweetAlertIcon.Success);
-        }
+        users = await ManageUsersService.GetUsers();
     }
 
-    private async Task DeleteUser(string userId)
+    private async Task OnRoleChangedAsync(ManageUserDTO user, string newRole)
+    {
+        if (user.Role == newRole)
+        {
+            return;
+        }
+
+        var result = await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Update User Role",
+            Text = $"Are you sure you want to change the role of {user.Name} to {newRole}?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        if (!result.IsConfirmed)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        await ManageUsersService.UpdateUserRole(user.Id, newRole);
+        user.Role = newRole;
+
+        await Swal.FireAsync("Success", "User role updated successfully.", SweetAlertIcon.Success);
+    }
+
+    private async Task DeleteUserAsync(string userId)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Delete User",
-                Text = "Are you sure you want to delete this user?",
-                Icon = SweetAlertIcon.Question,
-                ShowCancelButton = true
-            });
-
-        if (result.IsConfirmed)
         {
-            await ManageUsersService.DeleteUser(userId);
-            users = await ManageUsersService.GetUsers();
-            await Swal.FireAsync("Success", "User deleted successfully.", SweetAlertIcon.Success);
+            Title = "Delete User",
+            Text = "Are you sure you want to delete this user?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        if (!result.IsConfirmed)
+        {
+            return;
         }
+
+        await ManageUsersService.DeleteUser(userId);
+        await LoadUsersAsync();
+
+        await Swal.FireAsync("Success", "User deleted successfully.", SweetAlertIcon.Success);
     }
 }

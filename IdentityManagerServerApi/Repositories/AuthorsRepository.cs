@@ -19,7 +19,7 @@ namespace IdentityManagerServerApi.Repositories
 
 
 
-            if (author == null)
+            if (author is null)
                 return null;
             AuthorDTO authorDTO = new AuthorDTO
             {
@@ -64,12 +64,12 @@ namespace IdentityManagerServerApi.Repositories
         {
             var existingAuthor = await _dbContext.Authors.FindAsync(id);
 
-            if (existingAuthor == null)
-                return await Task.FromResult(0); //Error.NotFound("Author not found");
+            if (existingAuthor is null)
+                return 0;// await Task.FromResult(0); //Error.NotFound("Author not found");
 
             existingAuthor.Name = author.Name;
 
-            _dbContext.Authors.Update(existingAuthor);
+            //_dbContext.Authors.Update(existingAuthor);
             return await _dbContext.SaveChangesAsync();
 
            
@@ -78,17 +78,18 @@ namespace IdentityManagerServerApi.Repositories
         public async Task<string> DeleteAuthor(int id)
         {
             var author = await _dbContext.Authors.FindAsync(id);
+            if(author is null)
+                return "No Author found";
 
             if (await _dbContext.Books.AnyAsync(b => b.AuthorId == id))
             {
-                return await Task.FromResult("Author has books"); //"Author has books, cannot delete";
-                //return false;
+                return ("Author has books"); //"Author has books, cannot delete";
             }
             else
             {
                 _dbContext.Authors.Remove(author);
                 var response = await _dbContext.SaveChangesAsync();
-                return response > 0 ? await Task.FromResult("") : await Task.FromResult("Author not deleted");
+                return response > 0 ? ("") : ("Author not deleted");
             }
 
 

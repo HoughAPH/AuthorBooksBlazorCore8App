@@ -1,13 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace IdentityManagerServerApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Admin")]
 public class ManageUsersController(IManageUsers manageUsers) : ControllerBase
 {
     [HttpGet("get-users")]

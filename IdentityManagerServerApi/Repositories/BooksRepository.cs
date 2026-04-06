@@ -77,23 +77,19 @@ namespace SharedClassLibrary.Repositories
 
         }
 
-        public Task<int> UpdateBook(int id, BookDTO book)
+        public async Task<int> UpdateBook(int id, BookDTO book)
         {
-            if (_dbContext.Books.Any(b => b.Id == id))
+            var bookToUpdate = await _dbContext.Books.FindAsync(id);
+
+            if (bookToUpdate is null)
             {
-                var bookToUpdate = new Book
-                {
-                    Id = book.Id,
-                    Title = book.Title,
-                    AuthorId = book.AuthorId
-                };
-                _dbContext.Books.Update(bookToUpdate);
-                return _dbContext.SaveChangesAsync();
+                return 0;
             }
-            else
-            {
-                return Task.FromResult(0);
-            }
+
+            bookToUpdate.Title = book.Title;
+            bookToUpdate.AuthorId = book.AuthorId;
+
+            return await _dbContext.SaveChangesAsync();
         }
 
         public Task<bool> DeleteBook(int id)

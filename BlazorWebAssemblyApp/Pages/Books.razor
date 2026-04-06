@@ -1,20 +1,24 @@
 ﻿@page "/books"
-@page "/books/{authorId:int}"
-@using Blazored.LocalStorage
+@page "/books/{AuthorId:int}"
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
 @using CurrieTechnologies.Razor.SweetAlert2
-@inject ILocalStorageService LocalStorageService
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
 @inject IBooks BookService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
 @inject SweetAlertService Swal;
 
 <PageTitle>Books</PageTitle>
 
-<button class="btn btn-primary" disabled=@(role != "Admin") @onclick="@(() => NavigateToBookPage(0))">
-    Create New
-</button>
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">
+            Create New
+        </button>
+    </Authorized>
+</AuthorizeView>
 
 @if (books == null)
 {
@@ -38,12 +42,16 @@ else
                     <td>@book.Title</td>
                     <td>@book.AuthorName</td>
                     <td>
-                        <button type="button" class="btn btn-primary" disabled=@(role != "Admin") @onclick="@(() => NavigateToBookPage(book.Id))">
-                            <i class="oi oi-pencil">Edit</i>
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm ms-2" disabled=@(role != "Admin") @onclick="@(async() => await  Delete(book))">
-                            <i class="oi oi-trash">Delete</i>
-                        </button>
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToBookPage(book.Id))">
+                                    <i class="oi oi-pencil">Edit</i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(book))">
+                                    <i class="oi oi-trash">Delete</i>
+                                </button>
+                            </Authorized>
+                        </AuthorizeView>
                     </td>
                 </tr>
             }
@@ -53,21 +61,26 @@ else
 
 @code {
     [Parameter]
-    public int authorId { get; set; } = 0;
-    private string role = string.Empty;
+    public int AuthorId { get; set; } = 0;
+
     private IEnumerable<BookDTO>? books;
     // private SharedClassLibrary.DTOs.Author author = new();
-    protected override async Task OnInitializedAsync()
+
+    protected override async Task OnParametersSetAsync()
     {
-        role = await LocalStorageService.GetItemAsStringAsync("Role");
         // if(string.IsNullOrEmpty(role))
         // {
         //     NavigationManager.NavigateTo("/login");
         // }
 
-        if (authorId != 0)
+        await LoadBooksAsync();
+    }
+
+    private async Task LoadBooksAsync()
+    {
+        if (AuthorId != 0)
         {
-            books = await BookService.GetAuthorBooks(authorId);
+            books = await BookService.GetAuthorBooks(AuthorId);
         }
         else
         {
@@ -75,7 +88,7 @@ else
         }
     }
 
-    private async Task Delete(BookDTO book)
+    private async Task DeleteAsync(BookDTO book)
     {
         //bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
         var result = await Swal.FireAsync(new SweetAlertOptions
@@ -89,12 +102,13 @@ else
         if (result.IsConfirmed)
         {
             await BookService.DeleteBook(book.Id);
-            books = await BookService.GetBooks();
+            await LoadBooksAsync();
         }
     }
+
     private void NavigateToBookPage(int bookId)
     {
-        if(bookId == 0)
+        if (bookId == 0)
         {
             NavigationManager.NavigateTo("/book");
         }

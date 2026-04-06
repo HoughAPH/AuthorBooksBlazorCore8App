@@ -1,17 +1,20 @@
 using CurrieTechnologies.Razor.SweetAlert2;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using SharedClassLibrary.DTOs;
 
 namespace BlazorWebAssemblyApp.Pages
 {
+    [Authorize(Roles = "Admin")]
     public partial class Author
     {
         [Parameter]
         public int idEdit { get; set; } = 0;
-        private SharedClassLibrary.DTOs.AuthorDTO author = new();
-        string headerTitle = "Create New Author";
 
+        private AuthorDTO? author;
+        private string headerTitle = "Create New Author";
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
             if (idEdit != 0)
             {
@@ -20,68 +23,35 @@ namespace BlazorWebAssemblyApp.Pages
             }
             else
             {
+                headerTitle = "Create New Author";
                 author = new();
             }
         }
 
-        protected async void OnValidSubmit()
+        protected async Task OnValidSubmit()
         {
-            int returnId = 0;
-
-            if (idEdit != 0)
+            if (author is null)
             {
-                var result = await AuthorsService.UpdateAuthor(author.Id, author);
-                if (result == 0)
-                {
-                    //await JSRuntime.InvokeVoidAsync("alert", result.FirstError.Description);
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = "Error updating Author",
-                        Text = "Error",
-                        Icon = SweetAlertIcon.Warning
-                    });
-                }
-                else
-                {
-                    returnId = result;
-                    navigation.NavigateTo("/authors");
-                }
+                return;
             }
-            else
+
+            int result = idEdit != 0
+                ? await AuthorsService.UpdateAuthor(author.Id, author)
+                : await AuthorsService.AddAuthor(author);
+
+            if (result == 0)
             {
-                var result = await AuthorsService.AddAuthor(author);
-
-
-                if (result == 0)
+                await Swal.FireAsync(new SweetAlertOptions
                 {
-                    //await JSRuntime.InvokeVoidAsync("alert", "Error");
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = "Error adding Author",
-                        Text = "Error",
-                        Icon = SweetAlertIcon.Warning
-                    });
+                    Title = idEdit != 0 ? "Error updating Author" : "Error adding Author",
+                    Text = "Error",
+                    Icon = SweetAlertIcon.Warning
+                });
 
-                    //navigation.NavigateTo("/authors");
-                }
-                else
-                {
-                    returnId = result;
-                    navigation.NavigateTo("/authors");
-                    //returnId = 1;
-                };
-
-                //returnId = 1;// await AuthorsService.AddAuthor(author);
+                return;
             }
+
+            navigation.NavigateTo("/authors");
         }
-        // if(returnId != 0)
-        // {
-        //     navigation.NavigateTo("/authors");
-        // }
-        // else
-        // {
-        //     await JSRuntime.InvokeVoidAsync("alert", "Unauthorized");
-        //     navigation.NavigateTo("/authors");
-        // }
     }
 }

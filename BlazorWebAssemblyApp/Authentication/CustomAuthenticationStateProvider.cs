@@ -1,29 +1,41 @@
 ﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using SharedClassLibrary.GenericModels;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 namespace BlazorWebAssemblyApp.Authentication
 {
     public class CustomAuthenticationStateProvider(ILocalStorageService localStorageService) : AuthenticationStateProvider
     {
         private ClaimsPrincipal anonymous = new(new ClaimsIdentity());
-        public async override Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                string stringToken = await localStorageService.GetItemAsStringAsync("token");
+                var token = await localStorageService.GetItemAsStringAsync("token");
+                token = token?.Trim('"');
 
-                if (string.IsNullOrWhiteSpace(stringToken))
-                    return await Task.FromResult(new AuthenticationState(anonymous));
+                if (string.IsNullOrWhiteSpace(token))
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
-                var claims = Generics.GetClaimsFromToken(stringToken);
+                var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+                var expClaim = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
 
-                var claimsPrincipal = Generics.SetClaimPrincipal(claims);
-                return await Task.FromResult(new AuthenticationState(claimsPrincipal));
+                if (expClaim is null || 
+                    DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)) <= DateTimeOffset.UtcNow)
+                {
+                    await localStorageService.RemoveItemAsync("token");
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+                var claims = Generics.GetClaimsFromToken(token);
+                var principal = Generics.SetClaimPrincipal(claims);
+                return new AuthenticationState(principal);
             }
             catch
             {
-                return await Task.FromResult(new AuthenticationState(anonymous));
+                await localStorageService.RemoveItemAsync("token");
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
         }
 

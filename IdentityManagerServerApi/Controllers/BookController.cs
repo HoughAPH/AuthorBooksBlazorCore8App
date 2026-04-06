@@ -9,6 +9,7 @@ namespace IdentityManagerServerApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     //    [Authorize(Roles = "Admin")]
     public class BookController(IBooks booksRepo) : ControllerBase
     {
@@ -27,6 +28,7 @@ namespace IdentityManagerServerApi.Controllers
         {
             return await booksRepo.GetAuthorBooks(id);
         }
+
         [HttpGet]
         [Route("GetBook/{id}")]
         public async Task<BookDTO> GetBook(int id)

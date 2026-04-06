@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using System.Security.Claims;
 
 namespace IdentityManagerServerApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AuthorController(IAuthors authorsRepo) : ControllerBase
     {
         [HttpGet]
@@ -16,7 +16,6 @@ namespace IdentityManagerServerApi.Controllers
         {
             return await authorsRepo.GetAuthors();
         }
-
 
         [HttpGet]
         [Route("GetAuthor/{id}")]
@@ -27,45 +26,26 @@ namespace IdentityManagerServerApi.Controllers
 
         [HttpPost]
         [Route("AddAuthor")]
-        //        [Authorize(Policy = "AdminPolicy")]
+        [Authorize(Roles = "Admin")]
         public async Task<int> AddAuthor(AuthorDTO author)
         {
-            var response = await authorsRepo.AddAuthor(author);
-
-            return response;
+            return await authorsRepo.AddAuthor(author);
         }
 
         [HttpPut]
         [Route("UpdateAuthor/{id}")]
         [Authorize(Roles = "Admin")]
-        //[Authorize(Policy = "AdminPolicy")]
         public async Task<int> UpdateAuthor(int id, AuthorDTO author)
         {
-            var test = User.Claims;
-            var role = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            var response = await authorsRepo.UpdateAuthor(id, author);
-
-            //if(!response.IsError)
-            //{
-            //    return response.Value;
-            //}
-            //else
-            //{
-            //    return response.Errors.First();
-            //}
-
-
-            return response;
+            return await authorsRepo.UpdateAuthor(id, author);
         }
 
         [HttpDelete]
         [Route("DeleteAuthor/{id}")]
-        //[Authorize(Policy = "AdminPolicy")]
         [Authorize(Roles = "Admin")]
         public async Task<string> DeleteAuthor(int id)
         {
             return await authorsRepo.DeleteAuthor(id);
         }
-
     }
 }
