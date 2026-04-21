@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-//using Microsoft.OpenApi.Models;
 using Serilog;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.Repositories;
@@ -108,7 +107,17 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     options.OperationFilter<SecurityRequirementsOperationFilter>();
-
+    //{
+    //    {
+    //        new OpenApiSecurityScheme
+    //        {
+    //            In = ParameterLocation.Header,
+    //            Name = "Authorization",
+    //            Type = SecuritySchemeType.ApiKey
+    //        },
+    //        []
+    //    }
+    //});
 });
 
 
