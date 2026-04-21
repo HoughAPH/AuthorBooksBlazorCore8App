@@ -9,17 +9,17 @@ namespace BlazorWebAssemblyApp.Pages
     public partial class Author
     {
         [Parameter]
-        public int idEdit { get; set; } = 0;
+        public int IdEdit { get; set; } = 0;
 
         private AuthorDTO? author;
         private string headerTitle = "Create New Author";
 
         protected override async Task OnParametersSetAsync()
         {
-            if (idEdit != 0)
+            if (IdEdit != 0)
             {
                 headerTitle = "Edit Author Details";
-                author = await AuthorsService.GetAuthor(idEdit);
+                author = await AuthorsService.GetAuthor(IdEdit);
             }
             else
             {
@@ -35,7 +35,7 @@ namespace BlazorWebAssemblyApp.Pages
                 return;
             }
 
-            int result = idEdit != 0
+            int result = IdEdit != 0
                 ? await AuthorsService.UpdateAuthor(author.Id, author)
                 : await AuthorsService.AddAuthor(author);
 
@@ -43,7 +43,7 @@ namespace BlazorWebAssemblyApp.Pages
             {
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = idEdit != 0 ? "Error updating Author" : "Error adding Author",
+                    Title = IdEdit != 0 ? "Error updating Author" : "Error adding Author",
                     Text = "Error",
                     Icon = SweetAlertIcon.Warning
                 });

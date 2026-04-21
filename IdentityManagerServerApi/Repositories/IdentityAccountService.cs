@@ -77,7 +77,9 @@ public class IdentityAccountService(
         if (string.IsNullOrWhiteSpace(user.Token))
             return (false, "Reset token is empty");
 
-        var resetPasswordResult = await userManager.ResetPasswordAsync(existingUser, user.Token, user.Password);
+        var token = Uri.UnescapeDataString(user.Token).Replace(' ', '+');
+
+        var resetPasswordResult = await userManager.ResetPasswordAsync(existingUser, token, user.Password);
         if (!resetPasswordResult.Succeeded)
             return (false, GetIdentityErrors(resetPasswordResult));
 
@@ -88,6 +90,9 @@ public class IdentityAccountService(
     {
         if (user is null)
             return (false, "User data is empty");
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+            return (false, "Email is required");
 
         var existingUser = await userManager.FindByEmailAsync(user.Email);
         if (existingUser is null)
