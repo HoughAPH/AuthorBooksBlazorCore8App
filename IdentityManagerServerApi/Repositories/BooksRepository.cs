@@ -22,7 +22,7 @@ namespace SharedClassLibrary.Repositories
                 .Include(b => b.Author)
                 .Select(b => new BookDTO
                 {
-                    //Id = b.Id,
+                    Id = b.Id,
                     Title = b.Title,
                     AuthorName = b.Author.Name,
                     AuthorId = b.AuthorId
