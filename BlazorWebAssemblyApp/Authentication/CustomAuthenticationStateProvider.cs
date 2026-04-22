@@ -1,6 +1,8 @@
 ﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
-using SharedClassLibrary.GenericModels;
+using SharedClassLibrary.Helpers;
+
+//using SharedClassLibrary.GenericModels;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 namespace BlazorWebAssemblyApp.Authentication
@@ -28,8 +30,8 @@ namespace BlazorWebAssemblyApp.Authentication
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
 
-                var claims = Generics.GetClaimsFromToken(token);
-                var principal = Generics.SetClaimPrincipal(claims);
+                var claims = JwtHelper.GetClaimsFromToken(token);
+                var principal = JwtHelper.SetClaimPrincipal(claims);
                 return new AuthenticationState(principal);
             }
             catch
@@ -44,8 +46,8 @@ namespace BlazorWebAssemblyApp.Authentication
             ClaimsPrincipal claimsPrincipal = new();
             if (!string.IsNullOrWhiteSpace(token))
             {
-                var userSession = Generics.GetClaimsFromToken(token);
-                claimsPrincipal = Generics.SetClaimPrincipal(userSession);
+                var userSession = JwtHelper.GetClaimsFromToken(token);
+                claimsPrincipal = JwtHelper.SetClaimPrincipal(userSession);
                 await localStorageService.SetItemAsStringAsync("Role", userSession.Role);
                 await localStorageService.SetItemAsStringAsync("token", token);
             }

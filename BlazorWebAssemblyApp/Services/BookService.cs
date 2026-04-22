@@ -1,7 +1,7 @@
 ﻿using Blazored.LocalStorage;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.GenericModels;
+using SharedClassLibrary.Helpers;
 using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services
@@ -27,7 +27,7 @@ namespace BlazorWebAssemblyApp.Services
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return [.. Generics.DeserializeJsonString<BookDTO[]>(apiResponse)];
+            return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
         }
 
         public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
@@ -38,7 +38,7 @@ namespace BlazorWebAssemblyApp.Services
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return [.. Generics.DeserializeJsonString<BookDTO[]>(apiResponse)];
+            return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
         }
 
         public async Task<BookDTO> GetBook(int id)
@@ -49,31 +49,31 @@ namespace BlazorWebAssemblyApp.Services
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<BookDTO>(apiResponse);
+            return JsonHelper.DeserializeJsonString<BookDTO>(apiResponse);
         }
 
         public async Task<int> AddBook(BookDTO book)
         {
             await SetAuthorizationHeaderAsync();
 
-            StringContent content = Generics.GenerateStringContent(Generics.SerializeObj<BookDTO>(book));
+            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj<BookDTO>(book));
             var response = await httpClient.PostAsync($"{BaseUrl}/AddBook", content);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<int>(apiResponse);
+            return JsonHelper.DeserializeJsonString<int>(apiResponse);
         }
 
         public async Task<int> UpdateBook(int id, BookDTO book)
         {
             await SetAuthorizationHeaderAsync();
 
-            StringContent content = Generics.GenerateStringContent(Generics.SerializeObj<BookDTO>(book));
+            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj<BookDTO>(book));
             var response = await httpClient.PutAsync($"{BaseUrl}/UpdateBook/{id}", content);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<int>(apiResponse);
+            return JsonHelper.DeserializeJsonString<int>(apiResponse);
         }
 
         public async Task<bool> DeleteBook(int id)

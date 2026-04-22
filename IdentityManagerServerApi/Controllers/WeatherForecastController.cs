@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Controllers
 {

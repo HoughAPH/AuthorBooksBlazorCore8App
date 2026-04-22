@@ -1,7 +1,7 @@
 ﻿using Blazored.LocalStorage;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.GenericModels;
+using SharedClassLibrary.Helpers;
 using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services
@@ -26,7 +26,7 @@ namespace BlazorWebAssemblyApp.Services
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return [.. Generics.DeserializeJsonString<AuthorDTO[]>(apiResponse)];
+            return [.. JsonHelper.DeserializeJsonString<AuthorDTO[]>(apiResponse)];
         }
 
         public async Task<AuthorDTO> GetAuthor(int id)
@@ -37,31 +37,31 @@ namespace BlazorWebAssemblyApp.Services
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<AuthorDTO>(apiResponse);
+            return JsonHelper.DeserializeJsonString<AuthorDTO>(apiResponse);
         }
 
         public async Task<int> AddAuthor(AuthorDTO author)
         {
             await SetAuthorizationHeaderAsync();
 
-            StringContent content = Generics.GenerateStringContent(Generics.SerializeObj(author));
+            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author));
             var response = await httpClient.PostAsync($"{BaseUrl}/AddAuthor", content);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<int>(apiResponse);
+            return JsonHelper.DeserializeJsonString<int>(apiResponse);
         }
 
         public async Task<int> UpdateAuthor(int id, AuthorDTO author)
         {
             await SetAuthorizationHeaderAsync();
 
-            StringContent content = Generics.GenerateStringContent(Generics.SerializeObj(author));
+            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author));
             var response = await httpClient.PutAsync($"{BaseUrl}/UpdateAuthor/{id}", content);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
-            return Generics.DeserializeJsonString<int>(apiResponse);
+            return JsonHelper.DeserializeJsonString<int>(apiResponse);
         }
 
         public async Task<string> DeleteAuthor(int id)

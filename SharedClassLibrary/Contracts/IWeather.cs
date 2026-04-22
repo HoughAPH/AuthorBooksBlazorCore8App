@@ -1,5 +1,4 @@
-﻿
-using SharedClassLibrary.DTOs;
+﻿using SharedClassLibrary.Models;
 
 namespace SharedClassLibrary.Contracts
 {

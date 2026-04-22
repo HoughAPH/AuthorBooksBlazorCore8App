@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Repositories
 {

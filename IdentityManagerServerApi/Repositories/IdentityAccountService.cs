@@ -2,8 +2,9 @@
 using Microsoft.AspNetCore.Identity;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.GenericModels;
-using static SharedClassLibrary.DTOs.ServiceResponses;
+using SharedClassLibrary.Models;
+using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Helpers;
 
 namespace IdentityManagerServerApi.Repositories;
 
@@ -134,7 +135,7 @@ public class IdentityAccountService(
     {
         var userSession = new UserSession(user.Id, user.Name, user.Email, role);
 
-        return Generics.GenerateJwtToken(
+        return JwtHelper.GenerateJwtToken(
             userSession,
             config["Jwt:Key"]!,
             config["Jwt:Issuer"]!,

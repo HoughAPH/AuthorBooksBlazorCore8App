@@ -2,6 +2,7 @@ using IdentityManagerServerApi.Data;
 using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 //using ILogger = Serilog.ILogger;
 
 namespace SharedClassLibrary.Repositories
@@ -21,9 +22,10 @@ namespace SharedClassLibrary.Repositories
                 .Include(b => b.Author)
                 .Select(b => new BookDTO
                 {
-                    Id = b.Id,
+                    //Id = b.Id,
                     Title = b.Title,
-                    AuthorName = b.Author.Name
+                    AuthorName = b.Author.Name,
+                    AuthorId = b.AuthorId
                 })
                 .ToListAsync();
 
@@ -41,7 +43,8 @@ namespace SharedClassLibrary.Repositories
             {
                 Id = b.Id,
                 Title = b.Title,
-                AuthorName = b.Author.Name
+                AuthorName = b.Author.Name,
+                AuthorId = b.AuthorId
             }).ToListAsync();
 
             return books;
@@ -50,15 +53,16 @@ namespace SharedClassLibrary.Repositories
         public async Task<BookDTO> GetBook(int id)
         {
             var book = await _dbContext.Books
-                .Include(b => b.Author)
-                .Select(b => new BookDTO
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    AuthorName = b.Author.Name,
-                    AuthorId = b.AuthorId
-                })
-                .FirstOrDefaultAsync(b => b.Id == id);
+         .Where(b => b.Id == id)
+         .Include(b => b.Author)
+         .Select(b => new BookDTO
+         {
+             Id = b.Id,
+             Title = b.Title,
+             AuthorName = b.Author.Name,
+             AuthorId = b.AuthorId
+         })
+         .FirstOrDefaultAsync();
 
             return book;
 

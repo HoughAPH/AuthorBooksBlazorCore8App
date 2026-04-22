@@ -1,5 +1,5 @@
 ﻿using SharedClassLibrary.DTOs;
-using static SharedClassLibrary.DTOs.ServiceResponses;
+using static SharedClassLibrary.Models.ServiceResponses;
 namespace SharedClassLibrary.Contracts
 {
     public interface IUserAccount

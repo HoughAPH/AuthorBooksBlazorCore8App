@@ -1,4 +1,4 @@
-﻿namespace SharedClassLibrary.DTOs
+﻿namespace SharedClassLibrary.Models
 {
     public class Logs
     {

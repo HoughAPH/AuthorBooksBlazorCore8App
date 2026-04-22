@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SharedClassLibrary.DTOs
+namespace SharedClassLibrary.Models
 {
     public class Author
     {

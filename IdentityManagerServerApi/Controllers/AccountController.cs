@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using static SharedClassLibrary.DTOs.ServiceResponses;
+using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace IdentityManagerServerApi.Controllers
 {

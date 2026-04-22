@@ -1,7 +1,7 @@
 using Blazored.LocalStorage;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.GenericModels;
+using SharedClassLibrary.Helpers;
 using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services;
@@ -26,7 +26,7 @@ public class ManageUsersService : IManageUsers
         response.EnsureSuccessStatusCode();
 
         var apiResponse = await response.Content.ReadAsStringAsync();
-        return Generics.DeserializeJsonString<List<ManageUserDTO>>(apiResponse);
+        return JsonHelper.DeserializeJsonString<List<ManageUserDTO>>(apiResponse);
     }
 
     public async Task UpdateUserRole(string userId, string role)
@@ -41,7 +41,7 @@ public class ManageUsersService : IManageUsers
 
         var response = await httpClient.PostAsync(
             $"{BaseUrl}/update-user-role",
-            Generics.GenerateStringContent(Generics.SerializeObj(updateUserRoleDTO)));
+            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(updateUserRoleDTO)));
 
         response.EnsureSuccessStatusCode();
     }

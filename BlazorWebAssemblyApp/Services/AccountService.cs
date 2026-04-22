@@ -1,9 +1,10 @@
 ﻿using Blazored.LocalStorage;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.GenericModels;
+using SharedClassLibrary.Helpers;
+using SharedClassLibrary.Models;
 using System.Net.Http.Headers;
-using static SharedClassLibrary.DTOs.ServiceResponses;
+using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace BlazorWebAssemblyApp.Services
 {
@@ -17,7 +18,7 @@ namespace BlazorWebAssemblyApp.Services
         {
             var response = await httpClient.PostAsync(
                 $"{BaseUrl}/register",
-                Generics.GenerateStringContent(Generics.SerializeObj(userDTO)));
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(userDTO)));
 
             var apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -26,14 +27,14 @@ namespace BlazorWebAssemblyApp.Services
                 return new GeneralResponse(false, "Error occurred. Try again later...");
             }
 
-            return Generics.DeserializeJsonString<GeneralResponse>(apiResponse);
+            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
         }
 
         public async Task<LoginResponse> LoginAccount(LoginDTO loginDTO)
         {
             var response = await httpClient.PostAsync(
                 $"{BaseUrl}/login",
-                Generics.GenerateStringContent(Generics.SerializeObj(loginDTO)));
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(loginDTO)));
 
             var apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -42,14 +43,14 @@ namespace BlazorWebAssemblyApp.Services
                 return new LoginResponse(false, null!, "Error occurred. Try again later...");
             }
 
-            return Generics.DeserializeJsonString<LoginResponse>(apiResponse);
+            return JsonHelper.DeserializeJsonString<LoginResponse>(apiResponse);
         }
 
         public async Task<(bool, string)> ForgotPassword(ForgotPasswordDTO user)
         {
             var response = await httpClient.PostAsync(
                 $"{BaseUrl}/forgot-password",
-                Generics.GenerateStringContent(Generics.SerializeObj(user)));
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
 
             var apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -58,7 +59,7 @@ namespace BlazorWebAssemblyApp.Services
                 return (false, "Error occurred. Try again later...");
             }
 
-            var result = Generics.DeserializeJsonString<ForgotPasswordResponse>(apiResponse);
+            var result = JsonHelper.DeserializeJsonString<ForgotPasswordResponse>(apiResponse);
             return (result.Success, result.Token);
         }
 
@@ -66,7 +67,7 @@ namespace BlazorWebAssemblyApp.Services
         {
             var response = await httpClient.PostAsync(
                 $"{BaseUrl}/reset-password",
-                Generics.GenerateStringContent(Generics.SerializeObj(user)));
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
 
             var apiResponse = await response.Content.ReadAsStringAsync();
 
@@ -75,7 +76,7 @@ namespace BlazorWebAssemblyApp.Services
                 return (false, "Error occurred. Try again later...");
             }
 
-            var result = Generics.DeserializeJsonString<ApiResponse>(apiResponse);
+            var result = JsonHelper.DeserializeJsonString<ApiResponse>(apiResponse);
             return (response.IsSuccessStatusCode, result.Message);
         }
 
@@ -89,7 +90,7 @@ namespace BlazorWebAssemblyApp.Services
                 return [];
             }
 
-            var claims = Generics.GetClaimsFromToken(token);
+            var claims = JwtHelper.GetClaimsFromToken(token);
             await SetAuthorizationHeaderAsync();
 
             var response = claims.Role == "Admin"
@@ -102,7 +103,7 @@ namespace BlazorWebAssemblyApp.Services
             }
 
             var result = await response.Content.ReadAsStringAsync();
-            return [.. Generics.DeserializeJsonStringList<WeatherForecast>(result)];
+            return [.. JsonHelper.DeserializeJsonStringList<WeatherForecast>(result)];
         }
 
         private async Task SetAuthorizationHeaderAsync()

@@ -1,24 +1,23 @@
 ﻿using Microsoft.IdentityModel.Tokens;
-using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-namespace SharedClassLibrary.GenericModels
+namespace SharedClassLibrary.Helpers
 {
-    public static class Generics
+    public static class JwtHelper
     {
         public static ClaimsPrincipal SetClaimPrincipal(UserSession model)
         {
             return new ClaimsPrincipal(new ClaimsIdentity(
                 new List<Claim>
                 {
-                    new(ClaimTypes.NameIdentifier, model.Id!),
-                    new(ClaimTypes.Name, model.Name!),
-                    new(ClaimTypes.Email, model.Email!),
-                    new(ClaimTypes.Role, model.Role!),
+                new(ClaimTypes.NameIdentifier, model.Id!),
+                new(ClaimTypes.Name, model.Name!),
+                new(ClaimTypes.Email, model.Email!),
+                new(ClaimTypes.Role, model.Role!),
                 }, "JwtAuth"));
         }
 
@@ -32,10 +31,10 @@ namespace SharedClassLibrary.GenericModels
                 audience: audience,
                 claims: new List<Claim>
                 {
-                    new(ClaimTypes.NameIdentifier, model.Id!),
-                    new(ClaimTypes.Name, model.Name!),
-                    new(ClaimTypes.Email, model.Email!),
-                    new(ClaimTypes.Role, model.Role!),
+                new(ClaimTypes.NameIdentifier, model.Id!),
+                new(ClaimTypes.Name, model.Name!),
+                new(ClaimTypes.Email, model.Email!),
+                new(ClaimTypes.Role, model.Role!),
                 },
                 expires: DateTime.Now.AddMinutes(30),
                 signingCredentials: credentials
@@ -57,21 +56,5 @@ namespace SharedClassLibrary.GenericModels
 
             return new UserSession(Id, Name, Email, Role);
         }
-
-        public static JsonSerializerOptions JsonOptions()
-        {
-            return new JsonSerializerOptions
-            {
-                AllowTrailingCommas = true,
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip
-            };
-        }
-        public static string SerializeObj<T>(T modelObject) => JsonSerializer.Serialize(modelObject, JsonOptions());
-        public static T DeserializeJsonString<T>(string jsonString) => JsonSerializer.Deserialize<T>(jsonString, JsonOptions())!;
-        public static IList<T> DeserializeJsonStringList<T>(string jsonString) => JsonSerializer.Deserialize<IList<T>>(jsonString, JsonOptions())!;
-
-        public static StringContent GenerateStringContent(string serialiazedObj) => new(serialiazedObj, System.Text.Encoding.UTF8, "application/json");
     }
 }
