@@ -3,55 +3,54 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using SharedClassLibrary.DTOs;
 
-namespace BlazorWebAssemblyApp.Pages
+namespace BlazorWebAssemblyApp.Pages;
+
+[Authorize(Roles = "Admin")]
+public partial class Author
 {
-    [Authorize(Roles = "Admin")]
-    public partial class Author
+    [Parameter]
+    public int IdEdit { get; set; } = 0;
+
+    private AuthorDTO? author;
+    private string headerTitle = "Create New Author";
+
+    protected override async Task OnParametersSetAsync()
     {
-        [Parameter]
-        public int IdEdit { get; set; } = 0;
-
-        private AuthorDTO? author;
-        private string headerTitle = "Create New Author";
-
-        protected override async Task OnParametersSetAsync()
+        if (IdEdit != 0)
         {
-            if (IdEdit != 0)
-            {
-                headerTitle = "Edit Author Details";
-                author = await AuthorsService.GetAuthor(IdEdit);
-            }
-            else
-            {
-                headerTitle = "Create New Author";
-                author = new();
-            }
+            headerTitle = "Edit Author Details";
+            author = await AuthorsService.GetAuthor(IdEdit);
+        }
+        else
+        {
+            headerTitle = "Create New Author";
+            author = new();
+        }
+    }
+
+    protected async Task OnValidSubmit()
+    {
+        if (author is null)
+        {
+            return;
         }
 
-        protected async Task OnValidSubmit()
+        int result = IdEdit != 0
+            ? await AuthorsService.UpdateAuthor(author.Id, author)
+            : await AuthorsService.AddAuthor(author);
+
+        if (result == 0)
         {
-            if (author is null)
+            await Swal.FireAsync(new SweetAlertOptions
             {
-                return;
-            }
+                Title = IdEdit != 0 ? "Error updating Author" : "Error adding Author",
+                Text = "Error",
+                Icon = SweetAlertIcon.Warning
+            });
 
-            int result = IdEdit != 0
-                ? await AuthorsService.UpdateAuthor(author.Id, author)
-                : await AuthorsService.AddAuthor(author);
-
-            if (result == 0)
-            {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = IdEdit != 0 ? "Error updating Author" : "Error adding Author",
-                    Text = "Error",
-                    Icon = SweetAlertIcon.Warning
-                });
-
-                return;
-            }
-
-            navigation.NavigateTo("/authors");
+            return;
         }
+
+        navigation.NavigateTo("/authors");
     }
 }

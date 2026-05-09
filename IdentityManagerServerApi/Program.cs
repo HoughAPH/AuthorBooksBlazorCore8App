@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SharedClassLibrary.Contracts;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-var allowedOrigins = builder.Configuration
+string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? ["https://localhost:7254"];
 
@@ -91,7 +91,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
 builder.Services.AddProblemDetails();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.

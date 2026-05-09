@@ -15,7 +15,7 @@ public class CustomPolicyAuthMiddleware : IAuthorizationMiddlewareResultHandler
         // provide a custom 404 response.
         if (authorizeResult.AuthorizationFailure is not null)
         {
-            var failedRequirement = authorizeResult.AuthorizationFailure.FailedRequirements
+            Show404Requirement? failedRequirement = authorizeResult.AuthorizationFailure.FailedRequirements
                 .OfType<Show404Requirement>().FirstOrDefault();
             if (failedRequirement is not null)
             {

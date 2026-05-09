@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using System.Security.Claims;
 using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace IdentityManagerServerApi.Repositories;
@@ -22,27 +23,27 @@ public class IdentityAccountService(
             return new GeneralResponse(false, "Model is empty");
         }
 
-        var existingUser = await userManager.FindByEmailAsync(userDTO.Email);
+        ApplicationUser? existingUser = await userManager.FindByEmailAsync(userDTO.Email);
         if (existingUser is not null)
         {
             return new GeneralResponse(false, "User registered already");
         }
 
-        var newUser = new ApplicationUser
+        ApplicationUser newUser = new()
         {
             Name = userDTO.Name,
             Email = userDTO.Email,
             UserName = userDTO.Email
         };
 
-        var createResult = await userManager.CreateAsync(newUser, userDTO.Password);
+        IdentityResult createResult = await userManager.CreateAsync(newUser, userDTO.Password);
         if (!createResult.Succeeded)
         {
             return new GeneralResponse(false, GetIdentityErrors(createResult));
         }
 
-        var roleToAssign = await GetRegistrationRoleAsync();
-        var addToRoleResult = await userManager.AddToRoleAsync(newUser, roleToAssign);
+        string roleToAssign = await GetRegistrationRoleAsync();
+        IdentityResult addToRoleResult = await userManager.AddToRoleAsync(newUser, roleToAssign);
 
         if (!addToRoleResult.Succeeded)
         {
@@ -59,13 +60,13 @@ public class IdentityAccountService(
             return new LoginResponse(false, string.Empty, "Login container is empty");
         }
 
-        var user = await userManager.FindByEmailAsync(loginDTO.Email);
+        ApplicationUser? user = await userManager.FindByEmailAsync(loginDTO.Email);
         if (user is null)
         {
             return new LoginResponse(false, string.Empty, "User not found");
         }
 
-        var signInResult = await signInManager.PasswordSignInAsync(
+        SignInResult signInResult = await signInManager.PasswordSignInAsync(
             user,
             loginDTO.Password,
             isPersistent: false,
@@ -87,19 +88,19 @@ public class IdentityAccountService(
 
     public async Task<CurrentUserDto?> GetCurrentUser()
     {
-        var principal = httpContextAccessor.HttpContext?.User;
+        ClaimsPrincipal? principal = httpContextAccessor.HttpContext?.User;
         if (principal?.Identity?.IsAuthenticated != true)
         {
             return null;
         }
 
-        var user = await userManager.GetUserAsync(principal);
+        ApplicationUser? user = await userManager.GetUserAsync(principal);
         if (user is null)
         {
             return null;
         }
 
-        var roles = await userManager.GetRolesAsync(user);
+        IList<string> roles = await userManager.GetRolesAsync(user);
 
         return new CurrentUserDto
         {
@@ -118,7 +119,7 @@ public class IdentityAccountService(
             return (false, "User data is empty");
         }
 
-        var existingUser = await userManager.FindByEmailAsync(user.Email!);
+        ApplicationUser? existingUser = await userManager.FindByEmailAsync(user.Email!);
         if (existingUser is null)
         {
             return (false, "User not found");
@@ -129,9 +130,9 @@ public class IdentityAccountService(
             return (false, "Reset token is empty");
         }
 
-        var token = Uri.UnescapeDataString(user.Token).Replace(' ', '+');
+        string token = Uri.UnescapeDataString(user.Token).Replace(' ', '+');
 
-        var resetPasswordResult = await userManager.ResetPasswordAsync(existingUser, token, user.Password);
+        IdentityResult resetPasswordResult = await userManager.ResetPasswordAsync(existingUser, token, user.Password);
         if (!resetPasswordResult.Succeeded)
         {
             return (false, GetIdentityErrors(resetPasswordResult));
@@ -152,19 +153,19 @@ public class IdentityAccountService(
             return (false, "Email is required");
         }
 
-        var existingUser = await userManager.FindByEmailAsync(user.Email);
+        ApplicationUser? existingUser = await userManager.FindByEmailAsync(user.Email);
         if (existingUser is null)
         {
             return (false, "User not found");
         }
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(existingUser);
+        string token = await userManager.GeneratePasswordResetTokenAsync(existingUser);
         return (true, token);
     }
 
     private async Task<string> GetRegistrationRoleAsync()
     {
-        var adminRole = await roleManager.FindByNameAsync(AdminRole);
+        IdentityRole? adminRole = await roleManager.FindByNameAsync(AdminRole);
         if (adminRole is null)
         {
             await EnsureRoleExistsAsync(AdminRole);
@@ -177,7 +178,7 @@ public class IdentityAccountService(
 
     private async Task EnsureRoleExistsAsync(string roleName)
     {
-        var role = await roleManager.FindByNameAsync(roleName);
+        IdentityRole? role = await roleManager.FindByNameAsync(roleName);
         if (role is null)
         {
             await roleManager.CreateAsync(new IdentityRole { Name = roleName });
@@ -186,7 +187,7 @@ public class IdentityAccountService(
 
     private static string GetIdentityErrors(IdentityResult result)
     {
-        var errors = result.Errors.Select(error => error.Description).ToArray();
+        string[] errors = result.Errors.Select(error => error.Description).ToArray();
         return errors.Length > 0
             ? string.Join("; ", errors)
             : "Operation failed";

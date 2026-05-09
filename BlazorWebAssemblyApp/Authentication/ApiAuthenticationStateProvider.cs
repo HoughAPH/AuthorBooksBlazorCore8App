@@ -11,7 +11,7 @@ public class ApiAuthenticationStateProvider(IUserAccount userAccount) : Authenti
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var currentUser = await userAccount.GetCurrentUser();
+        CurrentUserDto? currentUser = await userAccount.GetCurrentUser();
         return new AuthenticationState(CreatePrincipal(currentUser));
     }
 
@@ -33,7 +33,7 @@ public class ApiAuthenticationStateProvider(IUserAccount userAccount) : Authenti
             return Anonymous;
         }
 
-        var claims = new List<Claim>();
+        List<Claim> claims = new();
 
         if (!string.IsNullOrWhiteSpace(currentUser.Id))
         {

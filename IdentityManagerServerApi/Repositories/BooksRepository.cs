@@ -3,22 +3,21 @@ using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
-//using ILogger = Serilog.ILogger;
 
 namespace IdentityManagerServerApi.Repositories;
 
 public class BooksRepository : IBooks
 {
     private readonly AppDbContext _dbContext;
-    //private readonly ILogger _logger;
+
     public BooksRepository(AppDbContext dbContext)
     {
-        //_logger = logger;
         _dbContext = dbContext;
     }
+
     public async Task<IEnumerable<BookDTO>> GetBooks()
     {
-        var books = await _dbContext.Books
+        List<BookDTO> books = await _dbContext.Books
             .Include(b => b.Author)
             .Select(b => new BookDTO
             {
@@ -29,43 +28,41 @@ public class BooksRepository : IBooks
             })
             .ToListAsync();
 
-
-
         return books;
     }
 
     public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
     {
-        var books = await _dbContext.Books
-        .Where(b => b.AuthorId == id)
-        .Include(b => b.Author)
-        .Select(b => new BookDTO
-        {
-            Id = b.Id,
-            Title = b.Title,
-            AuthorName = b.Author.Name,
-            AuthorId = b.AuthorId
-        }).ToListAsync();
+        List<BookDTO> books = await _dbContext.Books
+            .Where(b => b.AuthorId == id)
+            .Include(b => b.Author)
+            .Select(b => new BookDTO
+            {
+                Id = b.Id,
+                Title = b.Title,
+                AuthorName = b.Author.Name,
+                AuthorId = b.AuthorId
+            })
+            .ToListAsync();
 
         return books;
     }
 
-    public async Task<BookDTO> GetBook(int id)
+    public async Task<BookDTO?> GetBook(int id)
     {
-        var book = await _dbContext.Books
-     .Where(b => b.Id == id)
-     .Include(b => b.Author)
-     .Select(b => new BookDTO
-     {
-         Id = b.Id,
-         Title = b.Title,
-         AuthorName = b.Author.Name,
-         AuthorId = b.AuthorId
-     })
-     .FirstOrDefaultAsync();
+        BookDTO? book = await _dbContext.Books
+            .Where(b => b.Id == id)
+            .Include(b => b.Author)
+            .Select(b => new BookDTO
+            {
+                Id = b.Id,
+                Title = b.Title,
+                AuthorName = b.Author.Name,
+                AuthorId = b.AuthorId
+            })
+            .FirstOrDefaultAsync();
 
         return book;
-
     }
 
     public async Task<int> AddBook(BookDTO book)
@@ -76,19 +73,15 @@ public class BooksRepository : IBooks
             AuthorId = book.AuthorId
         });
 
-
         return await _dbContext.SaveChangesAsync();
-
     }
 
     public async Task<int> UpdateBook(int id, BookDTO book)
     {
-        var bookToUpdate = await _dbContext.Books.FindAsync(id);
+        Book? bookToUpdate = await _dbContext.Books.FindAsync(id);
 
         if (bookToUpdate is null)
-        {
             return 0;
-        }
 
         bookToUpdate.Title = book.Title;
         bookToUpdate.AuthorId = book.AuthorId;
@@ -98,14 +91,10 @@ public class BooksRepository : IBooks
 
     public async Task<bool> DeleteBook(int id)
     {
-        if (await _dbContext.Books.AnyAsync(b => b.Id == id))
-        {
-            _dbContext.Books.Remove(new Book { Id = id });
-            return await _dbContext.SaveChangesAsync().ContinueWith(task => task.Result > 0);
-        }
-        else
-        {
-            return await Task.FromResult(false);
-        }
+        if (!await _dbContext.Books.AnyAsync(b => b.Id == id))
+            return false;
+
+        _dbContext.Books.Remove(new Book { Id = id });
+        return await _dbContext.SaveChangesAsync() > 0;
     }
 }

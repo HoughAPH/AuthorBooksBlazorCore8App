@@ -13,7 +13,7 @@ public class ManageUsersController(IManageUsers manageUsers) : ControllerBase
     [HttpGet("get-users")]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await manageUsers.GetUsers();
+        List<ManageUserDTO> users = await manageUsers.GetUsers();
         return Ok(users);
     }
 

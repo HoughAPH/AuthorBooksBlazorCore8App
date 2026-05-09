@@ -4,97 +4,78 @@ using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
 
-namespace IdentityManagerServerApi.Repositories
+namespace IdentityManagerServerApi.Repositories;
+
+public class AuthorsRepository : IAuthors
 {
-    public class AuthorsRepository : IAuthors
+    private readonly AppDbContext _dbContext;
+
+    public AuthorsRepository(AppDbContext dbContext)
     {
-        private readonly AppDbContext _dbContext;
-        public AuthorsRepository(AppDbContext dbContext)
+        _dbContext = dbContext;
+    }
+
+    public async Task<AuthorDTO?> GetAuthor(int id)
+    {
+        Author? author = await _dbContext.Authors.FindAsync(id);
+
+        if (author is null)
+            return null;
+
+        return new AuthorDTO
         {
-            _dbContext = dbContext;
-        }
+            Id = author.Id,
+            Name = author.Name
+        };
+    }
 
-        public async Task<AuthorDTO> GetAuthor(int id)
-        {
-            var author = await _dbContext.Authors.FindAsync(id);
-
-
-
-            if (author is null)
-                return null;
-            AuthorDTO authorDTO = new AuthorDTO
+    public async Task<List<AuthorDTO>> GetAuthors()
+    {
+        List<AuthorDTO> authors = await _dbContext.Authors
+            .Select(a => new AuthorDTO
             {
-                Id = author.Id,
-                Name = author.Name
-            };
+                Id = a.Id,
+                Name = a.Name
+            })
+            .ToListAsync();
 
-            return authorDTO;
+        return authors;
+    }
 
-
-        }
-
-        public async Task<List<AuthorDTO>> GetAuthors()
+    public async Task<int> AddAuthor(AuthorDTO author)
+    {
+        Author newAuthor = new()
         {
-            //throw new KeyNotFoundException("Authors not found");
-            var authors = await _dbContext.Authors
-                .Select(a => new AuthorDTO
-                {
-                    Id = a.Id,
-                    Name = a.Name
-                })
-                .ToListAsync();
-            //throw new KeyNotFoundException("Author not found");
-            return authors;
+            Name = author.Name
+        };
 
-        }
+        _dbContext.Authors.Add(newAuthor);
+        return await _dbContext.SaveChangesAsync();
+    }
 
-        public async Task<int> AddAuthor(AuthorDTO author)
-        {
-            var newAuthor = new Author
-            {
-                Name = author.Name
-            };
-            _dbContext.Authors.Add(newAuthor);
-            var response = await _dbContext.SaveChangesAsync();
+    public async Task<int> UpdateAuthor(int id, AuthorDTO author)
+    {
+        Author? existingAuthor = await _dbContext.Authors.FindAsync(id);
 
-            return response;
+        if (existingAuthor is null)
+            return 0;
 
-        }
+        existingAuthor.Name = author.Name;
+        return await _dbContext.SaveChangesAsync();
+    }
 
-        public async Task<int> UpdateAuthor(int id, AuthorDTO author)
-        {
-            var existingAuthor = await _dbContext.Authors.FindAsync(id);
+    public async Task<string> DeleteAuthor(int id)
+    {
+        Author? author = await _dbContext.Authors.FindAsync(id);
 
-            if (existingAuthor is null)
-                return 0;// await Task.FromResult(0); //Error.NotFound("Author not found");
+        if (author is null)
+            return "No Author found";
 
-            existingAuthor.Name = author.Name;
+        if (await _dbContext.Books.AnyAsync(b => b.AuthorId == id))
+            return "Author has books";
 
-            //_dbContext.Authors.Update(existingAuthor);
-            return await _dbContext.SaveChangesAsync();
-
-           
-        }
-
-        public async Task<string> DeleteAuthor(int id)
-        {
-            var author = await _dbContext.Authors.FindAsync(id);
-            if(author is null)
-                return "No Author found";
-
-            if (await _dbContext.Books.AnyAsync(b => b.AuthorId == id))
-            {
-                return ("Author has books"); //"Author has books, cannot delete";
-            }
-            else
-            {
-                _dbContext.Authors.Remove(author);
-                var response = await _dbContext.SaveChangesAsync();
-                return response > 0 ? ("") : ("Author not deleted");
-            }
-
-
-        }
-
+        _dbContext.Authors.Remove(author);
+        int response = await _dbContext.SaveChangesAsync();
+        return response > 0 ? "" : "Author not deleted";
     }
 }

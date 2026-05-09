@@ -2,90 +2,92 @@
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
+using System.Net;
 
-namespace BlazorWebAssemblyApp.Services
+namespace BlazorWebAssemblyApp.Services;
+
+public class BookService(HttpClient httpClient) : IBooks
 {
-    public class BookService(HttpClient httpClient) : IBooks
+    private const string BaseUrl = "api/Book";
+    private readonly HttpClient httpClient = httpClient;
+
+    public async Task<IEnumerable<BookDTO>> GetBooks()
     {
-        private const string BaseUrl = "api/Book";
-        private readonly HttpClient httpClient = httpClient;
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBooks");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
 
-        public async Task<IEnumerable<BookDTO>> GetBooks()
-        {
-            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBooks");
-            using var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
+    }
 
-            var apiResponse = await response.Content.ReadAsStringAsync();
-            return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
-        }
+    public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
+    {
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthorBooks/{id}");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
 
-        public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
-        {
-            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthorBooks/{id}");
-            using var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
+    }
 
-            var apiResponse = await response.Content.ReadAsStringAsync();
-            return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
-        }
+    public async Task<BookDTO?> GetBook(int id)
+    {
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBook/{id}");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        public async Task<BookDTO> GetBook(int id)
-        {
-            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBook/{id}");
-            using var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
 
-            var apiResponse = await response.Content.ReadAsStringAsync();
-            return JsonHelper.DeserializeJsonString<BookDTO>(apiResponse);
-        }
+        response.EnsureSuccessStatusCode();
 
-        public async Task<int> AddBook(BookDTO book)
-        {
-            using var request = CreateRequest(
-                HttpMethod.Post,
-                $"{BaseUrl}/AddBook",
-                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return JsonHelper.DeserializeJsonString<BookDTO>(apiResponse);
+    }
 
-            using var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+    public async Task<int> AddBook(BookDTO book)
+    {
+        using HttpRequestMessage request = CreateRequest(
+            HttpMethod.Post,
+            $"{BaseUrl}/AddBook",
+            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-            var apiResponse = await response.Content.ReadAsStringAsync();
-            return JsonHelper.DeserializeJsonString<int>(apiResponse);
-        }
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
 
-        public async Task<int> UpdateBook(int id, BookDTO book)
-        {
-            using var request = CreateRequest(
-                HttpMethod.Put,
-                $"{BaseUrl}/UpdateBook/{id}",
-                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+    }
 
-            using var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+    public async Task<int> UpdateBook(int id, BookDTO book)
+    {
+        using HttpRequestMessage request = CreateRequest(
+            HttpMethod.Put,
+            $"{BaseUrl}/UpdateBook/{id}",
+            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-            var apiResponse = await response.Content.ReadAsStringAsync();
-            return JsonHelper.DeserializeJsonString<int>(apiResponse);
-        }
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
 
-        public async Task<bool> DeleteBook(int id)
-        {
-            using var request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
-            using var response = await httpClient.SendAsync(request);
-            return response.IsSuccessStatusCode;
-        }
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+    }
 
-        private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
-        {
-            var request = new HttpRequestMessage(method, uri);
-            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
+    public async Task<bool> DeleteBook(int id)
+    {
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        return response.IsSuccessStatusCode;
+    }
 
-            if (content is not null)
-            {
-                request.Content = content;
-            }
+    private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
+    {
+        var request = new HttpRequestMessage(method, uri);
+        request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-            return request;
-        }
+        if (content is not null)
+            request.Content = content;
+
+        return request;
     }
 }

@@ -12,11 +12,11 @@ public class ManageUsersService(HttpClient httpClient) : IManageUsers
 
     public async Task<List<ManageUserDTO>> GetUsers()
     {
-        using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/get-users");
-        using var response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/get-users");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
-        var apiResponse = await response.Content.ReadAsStringAsync();
+        string apiResponse = await response.Content.ReadAsStringAsync();
         return JsonHelper.DeserializeJsonString<List<ManageUserDTO>>(apiResponse);
     }
 
@@ -28,19 +28,19 @@ public class ManageUsersService(HttpClient httpClient) : IManageUsers
             Role = role
         };
 
-        using var request = CreateRequest(
+        using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
             $"{BaseUrl}/update-user-role",
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(updateUserRoleDTO)));
 
-        using var response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteUser(string userId)
     {
-        using var request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/delete-user/{userId}");
-        using var response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/delete-user/{userId}");
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
 

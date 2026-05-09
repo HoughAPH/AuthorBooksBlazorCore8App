@@ -12,9 +12,9 @@ public class ResetPasswordDTO
 
     [Required]
     [MinLength(6)]
-    public string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 
     [Required]
     [Compare("Password")]
-    public string ConfirmPassword { get; set; }
+    public string ConfirmPassword { get; set; } = string.Empty;
 }

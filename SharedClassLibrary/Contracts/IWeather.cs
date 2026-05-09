@@ -1,9 +1,8 @@
 ﻿using SharedClassLibrary.Models;
 
-namespace SharedClassLibrary.Contracts
+namespace SharedClassLibrary.Contracts;
+
+public interface IWeather
 {
-    public interface IWeather
-    {
-        Task<WeatherForecast[]> GetWeatherForecast();
-    }
+    Task<WeatherForecast[]> GetWeatherForecast();
 }
