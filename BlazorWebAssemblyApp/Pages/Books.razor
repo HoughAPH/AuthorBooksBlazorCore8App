@@ -15,7 +15,7 @@
 <AuthorizeView Roles="Admin">
     <Authorized>
         <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">
-            Create New
+            New Book
         </button>
     </Authorized>
 </AuthorizeView>
@@ -26,37 +26,39 @@
 }
 else
 {
-    <table class="table-primary">
-        <thead>
-            <tr>
-              @*   <th>Id</th> *@
-                <th>Title</th>
-                <th>Author Name</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var book in books)
-            {
+    <div class="table-interactive">
+        <table class="table-primary">
+            <thead>
                 <tr>
-                    @* <td>@book.Id</td> *@
-                    <td>@book.Title</td>
-                    <td>@book.AuthorName</td>
-                    <td>
-                        <AuthorizeView Roles="Admin">
-                            <Authorized>
-                                <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToBookPage(book.Id))">
-                                    <i class="oi oi-pencil">Edit</i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(book))">
-                                    <i class="oi oi-trash">Delete</i>
-                                </button>
-                            </Authorized>
-                        </AuthorizeView>
-                    </td>
+                    @*   <th>Id</th> *@
+                    <th>Title</th>
+                    <th>Author Name</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var book in books)
+                {
+                    <tr>
+                        @* <td>@book.Id</td> *@
+                        <td>@book.Title</td>
+                        <td>@book.AuthorName</td>
+                        <td>
+                            <AuthorizeView Roles="Admin">
+                                <Authorized>
+                                    <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToBookPage(book.Id))">
+                                        <i class="oi oi-pencil">Edit</i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(book))">
+                                        <i class="oi oi-trash">Delete</i>
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
@@ -92,12 +94,12 @@ else
     {
         //bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
         var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Delete Book",
-                Text = "Do you want to delete the book?",
-                Icon = SweetAlertIcon.Question,
-                ShowCancelButton = true
-            });
+        {
+            Title = "Delete Book",
+            Text = "Do you want to delete the book?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
 
         if (result.IsConfirmed)
         {

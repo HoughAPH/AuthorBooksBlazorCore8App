@@ -1,8 +1,11 @@
 ﻿@using BlazorWebAssemblyApp.Authentication
 @using Microsoft.AspNetCore.Components.Authorization
- @inject AuthenticationStateProvider AuthStateProvider
- @inject NavigationManager NavManager
+@using SharedClassLibrary.Contracts
+@inject ApiAuthenticationStateProvider AuthStateProvider
+@inject IUserAccount AccountService
+@inject NavigationManager NavManager
 @inherits LayoutComponentBase
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -12,8 +15,8 @@
         <div class="top-row px-4">
             <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
                 <Authorized>
-                    Welcome, @context.User.Identity.Name
-                    <button class="btn btn-danger" @onclick="Logout"> Logout</button>
+                    Welcome,  @context.User.Identity?.Name  
+                    <button class="btn btn-danger ms-3" @onclick="Logout"> Logout</button>
                 </Authorized>
                 <NotAuthorized>
                     Welcome, Guest
@@ -31,19 +34,20 @@
 
 <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>
 
-@code{
+@code {
     private async Task Logout()
     {
-        var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
-        await customAuthStateProvider.UpdateAuthenticationState(null!);
-        NavManager.NavigateTo("/login");
+        await AccountService.LogoutAccount();
+        AuthStateProvider.NotifyUserLogout();
+        NavManager.NavigateTo("/login", forceLoad: true);
     }
 
-    void Signup()
+    private void Signup()
     {
         NavManager.NavigateTo("/register");
     }
-    void Login()
+
+    private void Login()
     {
         NavManager.NavigateTo("/login");
     }

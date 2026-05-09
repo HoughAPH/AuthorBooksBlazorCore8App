@@ -1,29 +1,19 @@
-﻿using Blazored.LocalStorage;
+﻿using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
-using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services
 {
-    public class BookService : IBooks
+    public class BookService(HttpClient httpClient) : IBooks
     {
-        public BookService(HttpClient httpClient, ILocalStorageService localStorageService)
-        {
-            this.httpClient = httpClient;
-            this.localStorageService = localStorageService;
-
-        }
-
         private const string BaseUrl = "api/Book";
-        private readonly HttpClient httpClient;
-        private readonly ILocalStorageService localStorageService;
+        private readonly HttpClient httpClient = httpClient;
 
         public async Task<IEnumerable<BookDTO>> GetBooks()
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.GetAsync($"{BaseUrl}/GetBooks");
+            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBooks");
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -32,9 +22,8 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.GetAsync($"{BaseUrl}/GetAuthorBooks/{id}");
+            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthorBooks/{id}");
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -43,9 +32,8 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<BookDTO> GetBook(int id)
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.GetAsync($"{BaseUrl}/GetBook/{id}");
+            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBook/{id}");
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -54,10 +42,12 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<int> AddBook(BookDTO book)
         {
-            await SetAuthorizationHeaderAsync();
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"{BaseUrl}/AddBook",
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj<BookDTO>(book));
-            var response = await httpClient.PostAsync($"{BaseUrl}/AddBook", content);
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -66,10 +56,12 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<int> UpdateBook(int id, BookDTO book)
         {
-            await SetAuthorizationHeaderAsync();
+            using var request = CreateRequest(
+                HttpMethod.Put,
+                $"{BaseUrl}/UpdateBook/{id}",
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj<BookDTO>(book));
-            var response = await httpClient.PutAsync($"{BaseUrl}/UpdateBook/{id}", content);
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -78,20 +70,22 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<bool> DeleteBook(int id)
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.DeleteAsync($"{BaseUrl}/DeleteBook/{id}");
+            using var request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
+            using var response = await httpClient.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
 
-        private async Task SetAuthorizationHeaderAsync()
+        private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
         {
-            var token = await localStorageService.GetItemAsStringAsync("token");
-            token = token?.Trim('"');
+            var request = new HttpRequestMessage(method, uri);
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-            httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
-                ? null
-                : new AuthenticationHeaderValue("Bearer", token);
+            if (content is not null)
+            {
+                request.Content = content;
+            }
+
+            return request;
         }
     }
 }

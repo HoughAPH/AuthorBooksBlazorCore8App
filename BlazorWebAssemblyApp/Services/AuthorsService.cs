@@ -1,28 +1,19 @@
-﻿using Blazored.LocalStorage;
+﻿using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
-using System.Net.Http.Headers;
 
 namespace BlazorWebAssemblyApp.Services
 {
-    public class AuthorsService : IAuthors
+    public class AuthorsService(HttpClient httpClient) : IAuthors
     {
-        public AuthorsService(HttpClient httpClient, ILocalStorageService localStorageService)
-        {
-            this.httpClient = httpClient;
-            this.localStorageService = localStorageService;
-        }
-
         private const string BaseUrl = "api/Author";
-        private readonly HttpClient httpClient;
-        private readonly ILocalStorageService localStorageService;
+        private readonly HttpClient httpClient = httpClient;
 
         public async Task<List<AuthorDTO>> GetAuthors()
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.GetAsync($"{BaseUrl}/GetAuthors");
+            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthors");
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -31,9 +22,8 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<AuthorDTO> GetAuthor(int id)
         {
-            await SetAuthorizationHeaderAsync();
-
-            var response = await httpClient.GetAsync($"{BaseUrl}/GetAuthor/{id}");
+            using var request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthor/{id}");
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -42,10 +32,12 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<int> AddAuthor(AuthorDTO author)
         {
-            await SetAuthorizationHeaderAsync();
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"{BaseUrl}/AddAuthor",
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
-            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author));
-            var response = await httpClient.PostAsync($"{BaseUrl}/AddAuthor", content);
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -54,10 +46,12 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<int> UpdateAuthor(int id, AuthorDTO author)
         {
-            await SetAuthorizationHeaderAsync();
+            using var request = CreateRequest(
+                HttpMethod.Put,
+                $"{BaseUrl}/UpdateAuthor/{id}",
+                JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
-            StringContent content = JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author));
-            var response = await httpClient.PutAsync($"{BaseUrl}/UpdateAuthor/{id}", content);
+            using var response = await httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var apiResponse = await response.Content.ReadAsStringAsync();
@@ -66,9 +60,9 @@ namespace BlazorWebAssemblyApp.Services
 
         public async Task<string> DeleteAuthor(int id)
         {
-            await SetAuthorizationHeaderAsync();
+            using var request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
+            using var response = await httpClient.SendAsync(request);
 
-            var response = await httpClient.DeleteAsync($"{BaseUrl}/DeleteAuthor/{id}");
             if (response.IsSuccessStatusCode)
             {
                 return string.Empty;
@@ -80,14 +74,17 @@ namespace BlazorWebAssemblyApp.Services
                 : error;
         }
 
-        private async Task SetAuthorizationHeaderAsync()
+        private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
         {
-            var token = await localStorageService.GetItemAsStringAsync("token");
-            token = token?.Trim('"');
+            var request = new HttpRequestMessage(method, uri);
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-            httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
-                ? null
-                : new AuthenticationHeaderValue("Bearer", token);
+            if (content is not null)
+            {
+                request.Content = content;
+            }
+
+            return request;
         }
     }
 }

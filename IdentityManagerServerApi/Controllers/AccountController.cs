@@ -26,6 +26,22 @@ namespace IdentityManagerServerApi.Controllers
             return response.Flag ? Ok(response) : BadRequest(response);
         }
 
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<ActionResult<GeneralResponse>> Logout()
+        {
+            var response = await userAccount.LogoutAccount();
+            return Ok(response);
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult<CurrentUserDto>> Me()
+        {
+            var response = await userAccount.GetCurrentUser();
+            return response is null ? Unauthorized() : Ok(response);
+        }
+
         [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordDTO model)

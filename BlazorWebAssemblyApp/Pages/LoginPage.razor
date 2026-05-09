@@ -1,10 +1,9 @@
 ﻿@page "/login"
-@inject AuthenticationStateProvider AuthStateProvider
-@inject NavigationManager NavManager
 @using BlazorWebAssemblyApp.Authentication
-@using Microsoft.AspNetCore.Components.Authorization
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
+@inject ApiAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavManager
 @inject IUserAccount AccountService
 @inject IJSRuntime js
 
@@ -17,16 +16,13 @@
                 <div class="card-header fw-bold">Login to your Account</div>
                 <div class="card-body">
 
-                    @* Email Address *@
                     <div class="form-group mb-3">
                         <input @bind="User.Email"
                                class="form-control"
                                type="email"
                                placeholder="Email Address">
-                        
                     </div>
 
-                    @* Password *@
                     <div class="form-group">
                         <div class="input-group mb-3">
                             <input id="pw" class="form-control" type="password"
@@ -43,10 +39,10 @@
                             type="submit">
                         Login
                     </button>
-                    <div>Forgot password
+                    <div>
+                        Forgot password
                         <a href="/ForgotPassword">Click here</a>
                     </div>
-
                 </div>
             </EditForm>
         </div>
@@ -55,22 +51,18 @@
 
 @code {
     public LoginDTO User { get; set; } = new();
-    async Task HandleLogin()
-    {
-        var (flag, token, message) = await AccountService.LoginAccount(User);
-        if (flag)
-        {
-            string customMessage = $"{message}{Environment.NewLine}{token}";
-            await js.InvokeVoidAsync("alert", customMessage);
 
-            var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
-            await customAuthStateProvider.UpdateAuthenticationState(token);
+    private async Task HandleLogin()
+    {
+        var response = await AccountService.LoginAccount(User);
+
+        if (response.Flag)
+        {
+            await AuthStateProvider.RefreshUserStateAsync();
             NavManager.NavigateTo("/", forceLoad: true);
+            return;
         }
 
-        await js.InvokeVoidAsync("alert", message);
-        return;
+        await js.InvokeVoidAsync("alert", response.Message);
     }
-
-   
 }

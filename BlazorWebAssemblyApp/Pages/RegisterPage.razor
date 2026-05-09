@@ -1,9 +1,9 @@
 ﻿@page "/register"
-@using Blazored.LocalStorage
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IUserAccount AccountService
-@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime js
 
 <div class="container">
@@ -91,7 +91,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        role = await LocalStorageService.GetItemAsStringAsync("Role");
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        role = authState.User?.IsInRole("Admin") == true ? "Admin" : string.Empty;
+
     }
 
 

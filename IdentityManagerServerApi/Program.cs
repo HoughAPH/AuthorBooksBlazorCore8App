@@ -1,16 +1,11 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Serilog;
 using SharedClassLibrary.Contracts;
-using SharedClassLibrary.Repositories;
-using Swashbuckle.AspNetCore.Filters;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,13 +18,7 @@ var allowedOrigins = builder.Configuration
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-
-//var levelSwitch = new LoggingLevelSwitch();
-//Log.Logger = new LoggerConfiguration()
-//    .MinimumLevel.ControlledBy(levelSwitch)
-//    .Enrich.WithProperty("InstanceId", Guid.NewGuid().ToString("n"))
-//    //.WriteTo.BrowserHttp(endpointUrl: $"{builder.HostEnvironment.BaseAddress}ingest", controlLevelSwitch: levelSwitch)
-//    .CreateLogger();
+builder.Services.AddSwaggerGen();
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -55,33 +44,38 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddRoles<IdentityRole>()
     .AddDefaultTokenProviders();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "__Host-AuthorBooks.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Path = "/";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = true;
 
+    options.Events = new CookieAuthenticationEvents
+    {
+        OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        },
+        OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+    };
+});
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
 builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
-
-// JWT 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-
-
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateIssuerSigningKey = true,
-        ValidateLifetime = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-    };
-});
 
 builder.Services.AddCors(options =>
 {
@@ -89,37 +83,13 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(allowedOrigins)
               .WithMethods("GET", "POST", "DELETE", "PUT", "HEAD")
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
 builder.Services.AddProblemDetails();
-
-//Add authentication to Swagger UI
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey
-    });
-
-    options.OperationFilter<SecurityRequirementsOperationFilter>();
-    //{
-    //    {
-    //        new OpenApiSecurityScheme
-    //        {
-    //            In = ParameterLocation.Header,
-    //            Name = "Authorization",
-    //            Type = SecuritySchemeType.ApiKey
-    //        },
-    //        []
-    //    }
-    //});
-});
-
 
 var app = builder.Build();
 app.UseExceptionHandler();

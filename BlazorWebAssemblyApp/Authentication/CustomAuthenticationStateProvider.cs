@@ -1,8 +1,6 @@
 ﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using SharedClassLibrary.Helpers;
-
-//using SharedClassLibrary.GenericModels;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 namespace BlazorWebAssemblyApp.Authentication
