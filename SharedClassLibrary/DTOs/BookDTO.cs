@@ -7,8 +7,8 @@ public class BookDTO
 {
     public int Id { get; set; }
     [Required]
-    public string Title { get; set; } = string.Empty;
-    public string? AuthorName { get; set; }
+    public string Title { get; set; } = null!;
+    public string? AuthorName { get; set; } = string.Empty!;
     [Required]
     [Range(1, int.MaxValue, ErrorMessage = "AuthorId must be greater than 0.")]
     public int AuthorId { get; set; }

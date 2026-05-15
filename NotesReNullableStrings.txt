@@ -1,0 +1,30 @@
+In modern Entity Framework Core (EF Core), you should use nullable reference types (string?) for optional fields and non-nullable strings (string) for required fields, rather than initializing everything with an empty string. [1, 2] 
+Initializing properties with string.Empty to avoid compiler warnings often "defeats the point" of C# nullability tracking, as it hides the fact that a meaningful value might be missing. [3, 4] 
+## Best Practices for EF Core
+
+* For Optional Fields: Use string?. This maps to a NULL column in your database. It explicitly signals that data is missing, which is different from a zero-length string.
+* For Required Fields: Use string. This maps to a NOT NULL column. To handle the compiler warning (CS8618) that the property is uninitialized, use the null-forgiving operator: public string Name { get; set; } = null!;.
+* Avoid Global Empty Strings: Forcing an empty string on a required field can lead to "rogue" empty values in your UI where you actually expected a real value or a null check. [2, 5, 6, 7, 8, 9, 10] 
+
+## Summary Table
+
+| Goal [2, 4, 5, 6, 9, 11] | C# Property | DB Column | Reasoning |
+|---------------------------|---------------|--------------|-------------|
+| Optional						| string?		| NULL			| Explicitly represents the absence of data. |
+| Required						| string ... = null!; | NOT NULL | Enforces data presence while satisfying the C# compiler. |
+| Default Empty | string ... = ""; | NOT NULL | Only use if an empty string is a valid, intentional initial state. |
+
+For more details on implementation, refer to the [Microsoft documentation on Working with Nullable Reference Types](https://learn.microsoft.com/en-us/ef/core/miscellaneous/nullable-reference-types). [1, 8, 12] 
+
+[1] [https://learn.microsoft.com](https://learn.microsoft.com/en-us/ef/core/miscellaneous/nullable-reference-types)
+[2] [https://learn.microsoft.com](https://learn.microsoft.com/en-us/ef/core/modeling/entity-properties)
+[3] [https://endjin.com](https://endjin.com/blog/dotnet-csharp-8-nullable-references-empty-strings)
+[4] [https://endjin.com](https://endjin.com/blog/dotnet-csharp-8-nullable-references-empty-strings)
+[5] [https://stackoverflow.com](https://stackoverflow.com/questions/6689876/is-there-a-difference-between-string-empty-vs-null)
+[6] [https://www.damirscorner.com](https://www.damirscorner.com/blog/posts/20220812-NullableReferenceTypesAndNullabilityInEfCore.html)
+[7] [https://stackoverflow.com](https://stackoverflow.com/questions/14337551/why-is-the-default-value-of-the-string-type-null-instead-of-an-empty-string)
+[8] [https://learn.microsoft.com](https://learn.microsoft.com/en-us/ef/core/miscellaneous/nullable-reference-types)
+[9] [https://blog.shukebeta.com](https://blog.shukebeta.com/2025/01/08/null-vs-stringempty-best-practices-for-model-class-initialization/)
+[10] [https://www.reddit.com](https://www.reddit.com/r/csharp/comments/1n7wad2/null_vs_empty_fields_how_do_you_handle_them/)
+[11] [https://medium.com](https://medium.com/@Headspring/patterns-for-using-entity-framework-in-c-8-9b1eb7edf60f)
+[12] [https://devblogs.microsoft.com](https://devblogs.microsoft.com/dotnet/embracing-nullable-reference-types/)
