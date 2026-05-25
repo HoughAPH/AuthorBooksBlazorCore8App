@@ -12,7 +12,7 @@ public class BookDTO
     public string AuthorName { get; set; } = string.Empty;
 
     [Required]
-    [Range(1, int.MaxValue, ErrorMessage = "AuthorId must be greater than 0.")]
+    [Range(1, int.MaxValue, ErrorMessage = "A valid Author must be selected.")]
     public int AuthorId { get; set; }
 }
 
