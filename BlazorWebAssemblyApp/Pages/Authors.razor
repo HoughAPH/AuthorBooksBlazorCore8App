@@ -10,6 +10,7 @@
 
 <PageTitle>Authors</PageTitle>
 
+<h3 class="mb-2">Authors</h3>
 <AuthorizeView Roles="Admin">
     <Authorized>
         <button class="btn btn-primary" @onclick="NavigateToAuthorPage">
@@ -24,7 +25,7 @@
 }
 else
 {
-    <table class="table-bordered">
+    <table class="table-bordered mt-2">
         <tbody>
             @foreach (var author in authors)
             {
@@ -81,16 +82,26 @@ else
         }
 
         var response = await AuthorsService.DeleteAuthor(id);
-        if (string.IsNullOrWhiteSpace(response))
+
+        if (response.Flag)
         {
             await LoadAuthorsAsync();
+
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Success",
+                Text = response.Message,
+                Icon = SweetAlertIcon.Success,
+                ShowCancelButton = false
+            });
+
             return;
         }
 
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Error deleting author",
-            Text = response,
+            Text = response.Message,
             Icon = SweetAlertIcon.Warning,
             ShowCancelButton = false
         });

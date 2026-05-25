@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
+using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace IdentityManagerServerApi.Repositories;
 
@@ -65,7 +66,7 @@ public class BooksRepository : IBooks
         return book;
     }
 
-    public async Task<int> AddBook(BookDTO book)
+    public async Task<GeneralResponse> AddBook(BookDTO book)
     {
         _dbContext.Books.Add(new Book
         {
@@ -73,28 +74,44 @@ public class BooksRepository : IBooks
             AuthorId = book.AuthorId
         });
 
-        return await _dbContext.SaveChangesAsync();
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        return rowsAffected > 0
+            ? new(true, "Book added successfully.")
+            : new(false, "Book could not be added.");
     }
 
-    public async Task<int> UpdateBook(int id, BookDTO book)
+    public async Task<GeneralResponse> UpdateBook(int id, BookDTO book)
     {
         Book? bookToUpdate = await _dbContext.Books.FindAsync(id);
 
         if (bookToUpdate is null)
-            return 0;
+            return new(false, "Book not found.");
 
         bookToUpdate.Title = book.Title;
         bookToUpdate.AuthorId = book.AuthorId;
 
-        return await _dbContext.SaveChangesAsync();
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        return rowsAffected > 0
+            ? new(true, "Book updated successfully.")
+            : new(false, "Book could not be updated.");
     }
 
-    public async Task<bool> DeleteBook(int id)
+    public async Task<GeneralResponse> DeleteBook(int id)
     {
-        if (!await _dbContext.Books.AnyAsync(b => b.Id == id))
-            return false;
+        Book? book = await _dbContext.Books.FindAsync(id);
 
-        _dbContext.Books.Remove(new Book { Id = id });
-        return await _dbContext.SaveChangesAsync() > 0;
+        if (book is null)
+            return new(false, "Book not found.");
+
+        _dbContext.Books.Remove(book);
+
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        if (rowsAffected <= 0)
+            throw new InvalidOperationException("Book could not be deleted.");
+
+        return new(true, "Book deleted successfully.");
     }
 }

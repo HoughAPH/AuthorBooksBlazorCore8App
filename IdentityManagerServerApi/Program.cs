@@ -9,35 +9,44 @@ using SharedClassLibrary.Contracts;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+{
+    loggerConfiguration
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
+
+    if (context.HostingEnvironment.IsEnvironment("IntegrationTesting"))
+    {
+        loggerConfiguration
+            .MinimumLevel.Warning()
+            .WriteTo.Debug();
+
+        return;
+    }
+
+    loggerConfiguration.ReadFrom.Configuration(context.Configuration);
+});
+
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? ["https://localhost:7254"];
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
+string defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
 
-//Starting
-builder.Services.AddDbContext<AppDbContext>(options =>
+if (!builder.Environment.IsEnvironment("IntegrationTesting"))
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ??
-        throw new InvalidOperationException("Connection String is not found"));
-});
+    builder.Services.AddDbContext<AppDbContext>(options =>
+    {
+        options.UseSqlServer(defaultConnection);
+    });
+}
 
-
-/* this is used instead of .UseSerilog to add Serilog to providers */
-builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
-//builder.Logging.AddSerilog();
-
-//Add Identity & JWT authentication
-//Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager()
@@ -92,6 +101,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
 builder.Services.AddProblemDetails();
 
 WebApplication app = builder.Build();
+
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
@@ -109,4 +119,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
 

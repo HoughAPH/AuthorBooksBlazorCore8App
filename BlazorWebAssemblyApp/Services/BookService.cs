@@ -3,6 +3,7 @@ using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using System.Net;
+using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace BlazorWebAssemblyApp.Services;
 
@@ -45,7 +46,7 @@ public class BookService(HttpClient httpClient) : IBooks
         return JsonHelper.DeserializeJsonString<BookDTO>(apiResponse);
     }
 
-    public async Task<int> AddBook(BookDTO book)
+    public async Task<GeneralResponse> AddBook(BookDTO book)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
@@ -53,13 +54,19 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
         string apiResponse = await response.Content.ReadAsStringAsync();
-        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Book could not be added.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
+
+        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
-    public async Task<int> UpdateBook(int id, BookDTO book)
+    public async Task<GeneralResponse> UpdateBook(int id, BookDTO book)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
@@ -67,22 +74,42 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
         string apiResponse = await response.Content.ReadAsStringAsync();
-        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Book could not be updated.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
+
+        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
-    public async Task<bool> DeleteBook(int id)
+    public async Task<GeneralResponse> DeleteBook(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return response.IsSuccessStatusCode;
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Book not found.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return string.IsNullOrWhiteSpace(apiResponse)
+            ? new(true, "Book removed successfully.")
+            : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
     {
-        var request = new HttpRequestMessage(method, uri);
+        HttpRequestMessage request = new(method, uri);
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
         if (content is not null)

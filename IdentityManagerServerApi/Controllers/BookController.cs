@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace IdentityManagerServerApi.Controllers;
 
@@ -10,20 +11,20 @@ namespace IdentityManagerServerApi.Controllers;
 [Authorize]
 public class BookController(IBooks booksRepo) : ControllerBase
 {
-    // GET: api/<BookController>
     [HttpGet]
     [Route("GetBooks")]
-    public async Task<IEnumerable<BookDTO>> GetBooks()
+    public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks()
     {
-        return await booksRepo.GetBooks();
+        IEnumerable<BookDTO> books = await booksRepo.GetBooks();
+        return Ok(books);
     }
 
-    // GET api/<BookController>/5
     [HttpGet]
     [Route("GetAuthorBooks/{id}")]
-    public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
+    public async Task<ActionResult<IEnumerable<BookDTO>>> GetAuthorBooks(int id)
     {
-        return await booksRepo.GetAuthorBooks(id);
+        IEnumerable<BookDTO> books = await booksRepo.GetAuthorBooks(id);
+        return Ok(books);
     }
 
     [HttpGet]
@@ -38,31 +39,45 @@ public class BookController(IBooks booksRepo) : ControllerBase
         return Ok(book);
     }
 
-    //// POST api/<BookController>
     [HttpPost]
     [Route("AddBook")]
     [Authorize(Roles = "Admin")]
-    public async Task<int> AddBook(BookDTO book)
+    public async Task<ActionResult<GeneralResponse>> AddBook(BookDTO book)
     {
-        return await booksRepo.AddBook(book);
+        GeneralResponse result = await booksRepo.AddBook(book);
 
+        if (!result.Flag)
+            return BadRequest(result);
+
+        return Ok(result);
     }
 
-    //// PUT api/<BookController>/5
     [Route("UpdateBook/{id}")]
     [HttpPut]
     [Authorize(Roles = "Admin")]
-    public async Task<int> UpdateBook(int id, BookDTO book)
+    public async Task<ActionResult<GeneralResponse>> UpdateBook(int id, BookDTO book)
     {
-        return await booksRepo.UpdateBook(id, book);
+        GeneralResponse result = await booksRepo.UpdateBook(id, book);
+
+        if (!result.Flag && result.Message == "Book not found.")
+            return NotFound(result);
+
+        if (!result.Flag)
+            return BadRequest(result);
+
+        return Ok(result);
     }
 
-    // DELETE api/<BookController>/5
     [HttpDelete]
     [Route("DeleteBook/{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<bool> DeleteBook(int id)
+    public async Task<ActionResult<GeneralResponse>> DeleteBook(int id)
     {
-        return await booksRepo.DeleteBook(id);
+        GeneralResponse result = await booksRepo.DeleteBook(id);
+
+        if (!result.Flag)
+            return NotFound(result);
+
+        return Ok(result);
     }
 }

@@ -1,13 +1,17 @@
 ﻿@page "/book"
 @page "/book/{IdEdit:int}"
+@page "/book/author/{AuthorId:int}"
+@page "/book/{IdEdit:int}/author/{AuthorId:int}"
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Authorization
+@using CurrieTechnologies.Razor.SweetAlert2
 @attribute [Authorize(Roles = "Admin")]
 @inject IBooks BookService
 @inject IAuthors AuthorService
 @inject NavigationManager Navigation
+@inject SweetAlertService Swal
 
 <PageTitle>Book</PageTitle>
 
@@ -62,6 +66,9 @@ else
     [Parameter]
     public int IdEdit { get; set; } = 0;
 
+    [Parameter]
+    public int AuthorId { get; set; } = 0;
+
     private BookDTO? book;
     private string headerTitle = "Create New Book";
     private List<AuthorDTO> authors = new();
@@ -79,7 +86,22 @@ else
             headerTitle = "Create New Book";
         }
 
-        authors = await AuthorService.GetAuthors();
+        if (AuthorId != 0)
+        {
+            AuthorDTO? author = await AuthorService.GetAuthor(AuthorId);
+
+            authors = author is null ? [] : [author];
+
+            if (book is not null && author is not null)
+            {
+                book.AuthorId = author.Id;
+                book.AuthorName = author.Name;
+            }
+        }
+        else
+        {
+            authors = await AuthorService.GetAuthors();
+        }
     }
 
     private async Task OnValidSubmitAsync()
@@ -89,19 +111,41 @@ else
             return;
         }
 
-        if (IdEdit != 0)
+        SharedClassLibrary.Models.ServiceResponses.GeneralResponse response = IdEdit != 0
+            ? await BookService.UpdateBook(IdEdit, book)
+            : await BookService.AddBook(book);
+
+        if (response.Flag)
         {
-            await BookService.UpdateBook(IdEdit, book);
-        }
-        else
-        {
-            await BookService.AddBook(book);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Success",
+                Text = response.Message,
+                Icon = SweetAlertIcon.Success,
+                ShowCancelButton = false
+            });
+
+            NavigateBackToList();
+            return;
         }
 
-        Navigation.NavigateTo("/books");
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Error",
+            Text = response.Message,
+            Icon = SweetAlertIcon.Error,
+            ShowCancelButton = false
+        });
     }
+
     private void NavigateBackToList()
     {
+        if (AuthorId != 0)
+        {
+            Navigation.NavigateTo($"/books/{AuthorId}");
+            return;
+        }
+
         Navigation.NavigateTo("/books");
     }
 }

@@ -5,20 +5,35 @@
 @using CurrieTechnologies.Razor.SweetAlert2
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+
 @attribute [Authorize]
 @inject IBooks BookService
+@inject IAuthors AuthorService
 @inject NavigationManager NavigationManager
 @inject SweetAlertService Swal;
 
 <PageTitle>Books</PageTitle>
 
-<AuthorizeView Roles="Admin">
-    <Authorized>
-        <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">
-            New Book
-        </button>
-    </Authorized>
-</AuthorizeView>
+<div class="mb-3">
+    @if (AuthorId != 0)
+    {
+        <div class="mb-2">
+            <button type="button" class="btn btn-secondary" @onclick="ShowAllBooks">
+                Show All Books
+            </button>
+        </div>
+    }
+
+    <h3 class="mb-2">@pageHeading</h3>
+
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">
+                New Book
+            </button>
+        </Authorized>
+    </AuthorizeView>
+</div>
 
 @if (books == null)
 {
@@ -30,7 +45,6 @@ else
         <table class="table-primary">
             <thead>
                 <tr>
-                    @*   <th>Id</th> *@
                     <th>Title</th>
                     <th>Author Name</th>
                 </tr>
@@ -39,7 +53,6 @@ else
                 @foreach (var book in books)
                 {
                     <tr>
-                        @* <td>@book.Id</td> *@
                         <td>@book.Title</td>
                         <td>@book.AuthorName</td>
                         <td>
@@ -66,33 +79,33 @@ else
     public int AuthorId { get; set; } = 0;
 
     private IEnumerable<BookDTO>? books;
-    // private SharedClassLibrary.DTOs.Author author = new();
+    private string pageHeading = "All Books";
 
     protected override async Task OnParametersSetAsync()
     {
-        // if(string.IsNullOrEmpty(role))
-        // {
-        //     NavigationManager.NavigateTo("/login");
-        // }
-
-        await LoadBooksAsync();
+        await LoadPageStateAsync();
     }
 
-    private async Task LoadBooksAsync()
+    private async Task LoadPageStateAsync()
     {
         if (AuthorId != 0)
         {
+            AuthorDTO? author = await AuthorService.GetAuthor(AuthorId);
+            pageHeading = author is null
+                ? "Books for Selected Author"
+                : $"Books for {author.Name}";
+
             books = await BookService.GetAuthorBooks(AuthorId);
         }
         else
         {
+            pageHeading = "All Books";
             books = await BookService.GetBooks();
         }
     }
 
     private async Task DeleteAsync(BookDTO book)
     {
-        //bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
         var result = await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Delete Book",
@@ -103,13 +116,36 @@ else
 
         if (result.IsConfirmed)
         {
-            await BookService.DeleteBook(book.Id);
-            await LoadBooksAsync();
+            SharedClassLibrary.Models.ServiceResponses.GeneralResponse response = await BookService.DeleteBook(book.Id);
+            if (response.Flag)
+            {
+                await Swal.FireAsync("Deleted!", response.Message, SweetAlertIcon.Success);
+            }
+            else
+            {
+                await Swal.FireAsync("Error!", response.Message, SweetAlertIcon.Error);
+            }
+
+            await LoadPageStateAsync();
         }
     }
 
     private void NavigateToBookPage(int bookId)
     {
+        if (AuthorId != 0)
+        {
+            if (bookId == 0)
+            {
+                NavigationManager.NavigateTo($"/book/author/{AuthorId}");
+            }
+            else
+            {
+                NavigationManager.NavigateTo($"/book/{bookId}/author/{AuthorId}");
+            }
+
+            return;
+        }
+
         if (bookId == 0)
         {
             NavigationManager.NavigateTo("/book");
@@ -118,5 +154,10 @@ else
         {
             NavigationManager.NavigateTo($"/book/{bookId}");
         }
+    }
+
+    private void ShowAllBooks()
+    {
+        NavigationManager.NavigateTo("/books");
     }
 }

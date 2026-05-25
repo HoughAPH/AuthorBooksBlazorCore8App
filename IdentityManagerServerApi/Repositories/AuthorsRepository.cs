@@ -3,17 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
+using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace IdentityManagerServerApi.Repositories;
 
-public class AuthorsRepository : IAuthors
+public class AuthorsRepository(AppDbContext dbContext) : IAuthors
 {
-    private readonly AppDbContext _dbContext;
-
-    public AuthorsRepository(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<AuthorDTO?> GetAuthor(int id)
     {
@@ -64,18 +60,22 @@ public class AuthorsRepository : IAuthors
         return await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<string> DeleteAuthor(int id)
+    public async Task<GeneralResponse> DeleteAuthor(int id)
     {
         Author? author = await _dbContext.Authors.FindAsync(id);
 
         if (author is null)
-            return "No Author found";
+            return new(false, "Author not found.");
 
-        if (await _dbContext.Books.AnyAsync(b => b.AuthorId == id))
-            return "Author has books";
+        bool hasBooks = await _dbContext.Books.AnyAsync(b => b.AuthorId == id);
+        if (hasBooks)
+            return new(false, "Author cannot be deleted because the author has books.");
 
         _dbContext.Authors.Remove(author);
-        int response = await _dbContext.SaveChangesAsync();
-        return response > 0 ? "" : "Author not deleted";
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        return rowsAffected > 0
+            ? new(true, "Author deleted successfully.")
+            : new(false, "Author was not deleted.");
     }
 }

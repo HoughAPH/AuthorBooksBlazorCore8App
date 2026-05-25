@@ -2,7 +2,7 @@
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
-using System.Net;
+using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace BlazorWebAssemblyApp.Services;
 
@@ -26,7 +26,7 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 
         response.EnsureSuccessStatusCode();
@@ -57,29 +57,36 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return 0;
+
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
         return JsonHelper.DeserializeJsonString<int>(apiResponse);
     }
 
-    public async Task<string> DeleteAuthor(int id)
+    public async Task<GeneralResponse> DeleteAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        if (response.IsSuccessStatusCode)
-            return string.Empty;
+        string apiResponse = await response.Content.ReadAsStringAsync();
 
-        string error = await response.Content.ReadAsStringAsync();
-        return string.IsNullOrWhiteSpace(error)
-            ? response.ReasonPhrase ?? "Error deleting author."
-            : error;
+        if (!string.IsNullOrWhiteSpace(apiResponse))
+        {
+            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
+
+        return response.IsSuccessStatusCode
+            ? new(true, "Author deleted successfully.")
+            : new(false, response.ReasonPhrase ?? "Error deleting author.");
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
     {
-        var request = new HttpRequestMessage(method, uri);
+        HttpRequestMessage request = new(method, uri);
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
         if (content is not null)
