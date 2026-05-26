@@ -104,26 +104,26 @@ public class AuthorControllerTests
     }
 
     [Test]
-    public async Task AddAuthor_Should_Return_New_Id()
+    public async Task AddAuthor_Should_Return_Success_Response()
     {
         AuthorDTO dto = new()
         {
             Name = "New Author"
         };
+        GeneralResponse expectedResponse = new(true, "Author added successfully");
+        _authorsRepo.Setup(x => x.AddAuthor(dto)).ReturnsAsync(expectedResponse);
 
-        _authorsRepo.Setup(x => x.AddAuthor(dto)).ReturnsAsync(55);
-
-        ActionResult<int> result = await _controller.AddAuthor(dto);
+        ActionResult<GeneralResponse> result = await _controller.AddAuthor(dto);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
 
         OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.EqualTo(55));
+        Assert.That(ok.Value, Is.EqualTo(expectedResponse));
         _authorsRepo.Verify(x => x.AddAuthor(dto), Times.Once);
     }
 
     [Test]
-    public async Task UpdateAuthor_Should_Return_Repository_Result()
+    public async Task UpdateAuthor_Should_Return_Success_Response()
     {
         const int id = 3;
 
@@ -133,19 +133,20 @@ public class AuthorControllerTests
             Name = "Updated Author"
         };
 
-        _authorsRepo.Setup(x => x.UpdateAuthor(id, dto)).ReturnsAsync(1);
+        GeneralResponse expectedResponse = new(true, "Author updated successfully");
+        _authorsRepo.Setup(x => x.UpdateAuthor(id, dto)).ReturnsAsync(expectedResponse);
 
-        ActionResult<int> result = await _controller.UpdateAuthor(id, dto);
+        ActionResult<GeneralResponse> result = await _controller.UpdateAuthor(id, dto);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
 
         OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.EqualTo(1));
+        Assert.That(ok.Value, Is.EqualTo(expectedResponse));
         _authorsRepo.Verify(x => x.UpdateAuthor(id, dto), Times.Once);
     }
 
     [Test]
-    public async Task DeleteAuthor_Should_Return_Repository_Message()
+    public async Task DeleteAuthor_Should_Return_Success_Response()
     {
         const int id = 4;
         GeneralResponse expected = new(true, "Author deleted successfully");

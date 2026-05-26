@@ -6,8 +6,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject IAuthors AuthorsService
 @inject IJSRuntime JSRuntime
-@inject SweetAlertService Swal
 @inject NavigationManager navigation
+@inject BlazorWebAssemblyApp.Services.INotificationService NotificationService
 
 <PageTitle>Author</PageTitle>
 
@@ -25,7 +25,11 @@ else
                         <h3 class="card-title">@headerTitle</h3>
                     </div>
                     <div class="card-body">
-
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-secondary" @onclick="NavigateBackToList">
+                                @(IdEdit != 0 ? "Back to List" : "Cancel")
+                            </button>
+                        </div>
                         <EditForm Enhance Model="author" OnValidSubmit="OnValidSubmit">
                             <DataAnnotationsValidator />
                             <ValidationSummary />

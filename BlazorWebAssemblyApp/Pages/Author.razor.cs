@@ -1,4 +1,3 @@
-using CurrieTechnologies.Razor.SweetAlert2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using SharedClassLibrary.DTOs;
@@ -35,22 +34,25 @@ public partial class Author
             return;
         }
 
-        int result = IdEdit != 0
+        var response = IdEdit != 0
             ? await AuthorsService.UpdateAuthor(author.Id, author)
             : await AuthorsService.AddAuthor(author);
 
-        if (result == 0)
+        if (!response.Flag)
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = IdEdit != 0 ? "Error updating Author" : "Error adding Author",
-                Text = "Error",
-                Icon = SweetAlertIcon.Warning
-            });
+            await NotificationService.ShowWarningAsync(
+                response.Message,
+                IdEdit != 0 ? "Error updating author" : "Error adding author");
 
             return;
         }
 
+        await NotificationService.ShowSuccessAsync(response.Message);
+        navigation.NavigateTo("/authors");
+    }
+
+    private void NavigateBackToList()
+    {
         navigation.NavigateTo("/authors");
     }
 }

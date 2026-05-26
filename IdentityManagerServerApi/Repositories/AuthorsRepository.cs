@@ -38,7 +38,7 @@ public class AuthorsRepository(AppDbContext dbContext) : IAuthors
         return authors;
     }
 
-    public async Task<int> AddAuthor(AuthorDTO author)
+    public async Task<GeneralResponse> AddAuthor(AuthorDTO author)
     {
         Author newAuthor = new()
         {
@@ -46,18 +46,26 @@ public class AuthorsRepository(AppDbContext dbContext) : IAuthors
         };
 
         _dbContext.Authors.Add(newAuthor);
-        return await _dbContext.SaveChangesAsync();
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        return rowsAffected > 0
+            ? new(true, "Author added successfully.")
+            : new(false, "Author was not added.");
     }
 
-    public async Task<int> UpdateAuthor(int id, AuthorDTO author)
+    public async Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author)
     {
         Author? existingAuthor = await _dbContext.Authors.FindAsync(id);
 
         if (existingAuthor is null)
-            return 0;
+            return new(false, "Author not found.");
 
         existingAuthor.Name = author.Name;
-        return await _dbContext.SaveChangesAsync();
+        int rowsAffected = await _dbContext.SaveChangesAsync();
+
+        return rowsAffected > 0
+            ? new(true, "Author updated successfully.")
+            : new(false, "Author was not updated.");
     }
 
     public async Task<GeneralResponse> DeleteAuthor(int id)

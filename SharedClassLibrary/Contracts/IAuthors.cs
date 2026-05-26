@@ -7,7 +7,7 @@ public interface IAuthors
 {
     Task<List<AuthorDTO>> GetAuthors();
     Task<AuthorDTO?> GetAuthor(int id);
-    Task<int> AddAuthor(AuthorDTO author);
-    Task<int> UpdateAuthor(int id, AuthorDTO author);
+    Task<GeneralResponse> AddAuthor(AuthorDTO author);
+    Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author);
     Task<GeneralResponse> DeleteAuthor(int id);
 }

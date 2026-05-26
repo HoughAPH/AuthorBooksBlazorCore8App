@@ -100,8 +100,10 @@ public class AuthorsApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        int result = await response.Content.ReadFromJsonAsync<int>();
-        Assert.That(result, Is.EqualTo(1));
+        GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Flag, Is.True);
+        Assert.That(result.Message, Is.EqualTo("Author added successfully."));
 
         List<AuthorDTO>? authors = await _adminClient.GetFromJsonAsync<List<AuthorDTO>>("/api/Author/GetAuthors");
         Assert.That(authors, Is.Not.Null);
@@ -135,8 +137,10 @@ public class AuthorsApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        int result = await response.Content.ReadFromJsonAsync<int>();
-        Assert.That(result, Is.EqualTo(1));
+        GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Flag, Is.True);
+        Assert.That(result.Message, Is.EqualTo("Author updated successfully."));
 
         AuthorDTO? updated = await _adminClient.GetFromJsonAsync<AuthorDTO>("/api/Author/GetAuthor/1");
         Assert.That(updated, Is.Not.Null);

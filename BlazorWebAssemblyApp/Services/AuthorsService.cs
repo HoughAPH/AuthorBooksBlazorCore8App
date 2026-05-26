@@ -35,7 +35,7 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         return JsonHelper.DeserializeJsonString<AuthorDTO>(apiResponse);
     }
 
-    public async Task<int> AddAuthor(AuthorDTO author)
+    public async Task<GeneralResponse> AddAuthor(AuthorDTO author)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
@@ -43,13 +43,17 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
         string apiResponse = await response.Content.ReadAsStringAsync();
-        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+
+        if (!string.IsNullOrWhiteSpace(apiResponse))
+            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+
+        return response.IsSuccessStatusCode
+            ? new(true, "Author added successfully.")
+            : new(false, response.ReasonPhrase ?? "Error adding author.");
     }
 
-    public async Task<int> UpdateAuthor(int id, AuthorDTO author)
+    public async Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
@@ -57,27 +61,24 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            return 0;
-
-        response.EnsureSuccessStatusCode();
-
         string apiResponse = await response.Content.ReadAsStringAsync();
-        return JsonHelper.DeserializeJsonString<int>(apiResponse);
+
+        if (!string.IsNullOrWhiteSpace(apiResponse))
+            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+
+        return response.IsSuccessStatusCode
+            ? new(true, "Author updated successfully.")
+            : new(false, response.ReasonPhrase ?? "Error updating author.");
     }
 
     public async Task<GeneralResponse> DeleteAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-
         string apiResponse = await response.Content.ReadAsStringAsync();
 
         if (!string.IsNullOrWhiteSpace(apiResponse))
-        {
             return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
 
         return response.IsSuccessStatusCode
             ? new(true, "Author deleted successfully.")

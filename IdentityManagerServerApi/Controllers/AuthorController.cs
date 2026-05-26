@@ -34,21 +34,28 @@ public class AuthorController(IAuthors authorsRepo) : ControllerBase
     [HttpPost]
     [Route("AddAuthor")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<int>> AddAuthor(AuthorDTO author)
+    public async Task<ActionResult<GeneralResponse>> AddAuthor(AuthorDTO author)
     {
-        int result = await authorsRepo.AddAuthor(author);
+        GeneralResponse result = await authorsRepo.AddAuthor(author);
+
+        if (!result.Flag)
+            return BadRequest(result);
+
         return Ok(result);
     }
 
     [HttpPut]
     [Route("UpdateAuthor/{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<int>> UpdateAuthor(int id, AuthorDTO author)
+    public async Task<ActionResult<GeneralResponse>> UpdateAuthor(int id, AuthorDTO author)
     {
-        int result = await authorsRepo.UpdateAuthor(id, author);
+        GeneralResponse result = await authorsRepo.UpdateAuthor(id, author);
 
-        if (result == 0)
-            return NotFound();
+        if (!result.Flag && result.Message == "Author not found.")
+            return NotFound(result);
+
+        if (!result.Flag)
+            return BadRequest(result);
 
         return Ok(result);
     }
@@ -59,6 +66,13 @@ public class AuthorController(IAuthors authorsRepo) : ControllerBase
     public async Task<ActionResult<GeneralResponse>> DeleteAuthor(int id)
     {
         GeneralResponse result = await authorsRepo.DeleteAuthor(id);
+
+        if (!result.Flag && result.Message == "Author not found.")
+            return NotFound(result);
+
+        if (!result.Flag)
+            return BadRequest(result);
+
         return Ok(result);
     }
 }
