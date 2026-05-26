@@ -13,7 +13,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\sample-data\**" />
+    <Content Remove="wwwroot\sample-data\**" />
+    <EmbeddedResource Remove="wwwroot\sample-data\**" />
+    <None Remove="wwwroot\sample-data\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Authentication\CustomAuthenticationStateProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Pages\Weather.razor" />
+    <Content Remove="wwwroot\Script\cronstrue.min.js" />
+    <Content Remove="wwwroot\Script\parser.js" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +38,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharedClassLibrary\SharedClassLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Script\" />
   </ItemGroup>
 
 </Project>

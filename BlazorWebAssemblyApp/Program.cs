@@ -24,8 +24,8 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 builder.Services.AddScoped<IUserAccount, AccountService>();
 builder.Services.AddScoped<IBooks, BookService>();
 builder.Services.AddScoped<IAuthors, AuthorsService>();
-builder.Services.AddScoped<IWeather, AccountService>();
 builder.Services.AddScoped<IManageUsers, ManageUsersService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSweetAlert2();
 
 await builder.Build().RunAsync();

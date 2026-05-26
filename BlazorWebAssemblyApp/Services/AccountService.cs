@@ -8,7 +8,7 @@ using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace BlazorWebAssemblyApp.Services;
 
-public class AccountService(HttpClient httpClient) : IUserAccount, IWeather
+public class AccountService(HttpClient httpClient) : IUserAccount
 {
     private const string BaseUrl = "api/Account";
     private readonly HttpClient httpClient = httpClient;
@@ -130,33 +130,33 @@ public class AccountService(HttpClient httpClient) : IUserAccount, IWeather
         return (response.IsSuccessStatusCode, result.Message);
     }
 
-    public async Task<WeatherForecast[]> GetWeatherForecast()
-    {
-        CurrentUserDto? currentUser = await GetCurrentUser();
-        if (currentUser is null || !currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(currentUser.Role))
-        {
-            return [];
-        }
+    //public async Task<WeatherForecast[]> GetWeatherForecast()
+    //{
+    //    CurrentUserDto? currentUser = await GetCurrentUser();
+    //    if (currentUser is null || !currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(currentUser.Role))
+    //    {
+    //        return [];
+    //    }
 
-        string route = currentUser.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
-            ? "api/WeatherForecast/admin"
-            : "api/WeatherForecast/user";
+    //    string route = currentUser.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+    //        ? "api/WeatherForecast/admin"
+    //        : "api/WeatherForecast/user";
 
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, route);
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+    //    using HttpRequestMessage request = CreateRequest(HttpMethod.Get, route);
+    //    using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            return [];
-        }
+    //    if (!response.IsSuccessStatusCode)
+    //    {
+    //        return [];
+    //    }
 
-        string result = await response.Content.ReadAsStringAsync();
-        return [.. JsonHelper.DeserializeJsonStringList<WeatherForecast>(result)];
-    }
+    //    string result = await response.Content.ReadAsStringAsync();
+    //    return [.. JsonHelper.DeserializeJsonStringList<WeatherForecast>(result)];
+    //}
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
     {
-        var request = new HttpRequestMessage(method, uri);
+        HttpRequestMessage request = new(method, uri);
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
         if (content is not null)

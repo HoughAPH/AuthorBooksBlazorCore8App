@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IAuthors AuthorsService
-@inject SweetAlertService Swal
+@inject BlazorWebAssemblyApp.Services.INotificationService NotificationService
 @inject NavigationManager Navigation
 
 <PageTitle>Authors</PageTitle>
@@ -68,15 +68,11 @@ else
 
     private async Task DeleteAsync(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Delete Author",
-            Text = "Do you want to delete the author?",
-            Icon = SweetAlertIcon.Question,
-            ShowCancelButton = true
-        });
+        bool confirmed = await NotificationService.ConfirmAsync(
+            "Delete Author",
+            "Do you want to delete the author?");
 
-        if (!result.IsConfirmed)
+        if (!confirmed)
         {
             return;
         }
@@ -86,25 +82,11 @@ else
         if (response.Flag)
         {
             await LoadAuthorsAsync();
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Success",
-                Text = response.Message,
-                Icon = SweetAlertIcon.Success,
-                ShowCancelButton = false
-            });
-
+            await NotificationService.ShowSuccessAsync(response.Message);
             return;
         }
 
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Error deleting author",
-            Text = response.Message,
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = false
-        });
+        await NotificationService.ShowWarningAsync(response.Message, "Error deleting author");
     }
 
     private void NavigateToEditAuthorPage(int authorId)

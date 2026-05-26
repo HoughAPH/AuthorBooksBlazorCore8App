@@ -1,16 +1,15 @@
 ﻿@page "/books"
 @page "/books/{AuthorId:int}"
+@using Microsoft.AspNetCore.Components.Authorization
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
-@using CurrieTechnologies.Razor.SweetAlert2
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 
 @attribute [Authorize]
 @inject IBooks BookService
 @inject IAuthors AuthorService
 @inject NavigationManager NavigationManager
-@inject SweetAlertService Swal;
+@inject BlazorWebAssemblyApp.Services.INotificationService NotificationService
 
 <PageTitle>Books</PageTitle>
 
@@ -47,10 +46,11 @@ else
                 <tr>
                     <th>Title</th>
                     <th>Author Name</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var book in books)
+                @foreach (BookDTO book in books)
                 {
                     <tr>
                         <td>@book.Title</td>
@@ -106,28 +106,28 @@ else
 
     private async Task DeleteAsync(BookDTO book)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Delete Book",
-            Text = "Do you want to delete the book?",
-            Icon = SweetAlertIcon.Question,
-            ShowCancelButton = true
-        });
+        bool confirmed = await NotificationService.ConfirmAsync(
+            "Delete Book",
+            $"Do you want to delete the book '{book.Title}'?");
 
-        if (result.IsConfirmed)
+        if (!confirmed)
         {
-            SharedClassLibrary.Models.ServiceResponses.GeneralResponse response = await BookService.DeleteBook(book.Id);
-            if (response.Flag)
-            {
-                await Swal.FireAsync("Deleted!", response.Message, SweetAlertIcon.Success);
-            }
-            else
-            {
-                await Swal.FireAsync("Error!", response.Message, SweetAlertIcon.Error);
-            }
-
-            await LoadPageStateAsync();
+            return;
         }
+
+        SharedClassLibrary.Models.ServiceResponses.GeneralResponse response =
+            await BookService.DeleteBook(book.Id);
+
+        if (response.Flag)
+        {
+            await NotificationService.ShowSuccessAsync(response.Message, "Deleted!");
+        }
+        else
+        {
+            await NotificationService.ShowErrorAsync(response.Message, "Error!");
+        }
+
+        await LoadPageStateAsync();
     }
 
     private void NavigateToBookPage(int bookId)

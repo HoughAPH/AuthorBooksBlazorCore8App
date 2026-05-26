@@ -37,7 +37,7 @@ else
                                     value="@user.Role"
                                     @onchange="@(async e => await OnRoleChangedAsync(user, e.Value?.ToString() ?? user.Role))">
                                 <option value="User">User</option>
-                                <option value="Author">Author</option>
+                                @* <option value="Author">Author</option> *@
                                 <option value="Admin">Admin</option>
                             </select>
                         </td>
