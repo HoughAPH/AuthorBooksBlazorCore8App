@@ -2,6 +2,7 @@
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
+using System.Net;
 using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace BlazorWebAssemblyApp.Services;
@@ -26,7 +27,7 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
 
         response.EnsureSuccessStatusCode();
@@ -45,12 +46,14 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         using HttpResponseMessage response = await httpClient.SendAsync(request);
         string apiResponse = await response.Content.ReadAsStringAsync();
 
-        if (!string.IsNullOrWhiteSpace(apiResponse))
-            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Author could not be added.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
 
-        return response.IsSuccessStatusCode
-            ? new(true, "Author added successfully.")
-            : new(false, response.ReasonPhrase ?? "Error adding author.");
+        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
     public async Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author)
@@ -63,26 +66,40 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         using HttpResponseMessage response = await httpClient.SendAsync(request);
         string apiResponse = await response.Content.ReadAsStringAsync();
 
-        if (!string.IsNullOrWhiteSpace(apiResponse))
-            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Author could not be updated.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
 
-        return response.IsSuccessStatusCode
-            ? new(true, "Author updated successfully.")
-            : new(false, response.ReasonPhrase ?? "Error updating author.");
+        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
     public async Task<GeneralResponse> DeleteAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
+
         string apiResponse = await response.Content.ReadAsStringAsync();
 
-        if (!string.IsNullOrWhiteSpace(apiResponse))
-            return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Author not found.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
 
-        return response.IsSuccessStatusCode
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.IsNullOrWhiteSpace(apiResponse)
+                ? new(false, "Author could not be deleted.")
+                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        }
+
+        return string.IsNullOrWhiteSpace(apiResponse)
             ? new(true, "Author deleted successfully.")
-            : new(false, response.ReasonPhrase ?? "Error deleting author.");
+            : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)

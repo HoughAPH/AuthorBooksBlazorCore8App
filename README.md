@@ -143,11 +143,22 @@ That addition made it easier to validate:
 
 ### Configuration
 
-Update configuration values in the API project before running:
+Before running the solution, configure the following values:
 
-- connection string
-- authentication-related settings as required
-- Serilog SQL sink settings if SQL logging is enabled
+#### API project (`IdentityManagerServerApi`)
+- `ConnectionStrings:DefaultConnection`
+- `Cors:AllowedOrigins`
+- Serilog sink settings if SQL logging is enabled
+
+#### Blazor WebAssembly project (`BlazorWebAssemblyApp`)
+- `ApiSettings:BaseUrl` in `wwwroot/appsettings.json`
+
+For local development, these values can be stored in:
+- `appsettings.json`
+- `appsettings.Development.json`
+- user secrets for sensitive values
+
+Do not commit real secrets to source control.
 
 ### Database
 
@@ -174,6 +185,20 @@ It should be viewed as:
 - plus a Blazor client used to expose and invoke the API in a more realistic way
 
 Some parts are intentionally simplified, especially around account recovery and production-grade identity workflows.
+
+## Known limitations / demo scope
+
+This repository is intended as a demonstration project rather than a production template.
+
+Current limitations include:
+
+- the UI is intentionally simple and focused on exercising API flows
+- password reset flow is limited because no email sender is configured
+- configuration still assumes local development defaults unless overridden
+- error handling is pragmatic rather than fully standardized across every feature
+- the solution favors clarity and end-to-end demonstration over production hardening
+
+If this were being taken further, the next steps would include stronger configuration management, more consistent API conventions, improved validation/error contracts, and a more polished user experience.
 
 ## Summary
 

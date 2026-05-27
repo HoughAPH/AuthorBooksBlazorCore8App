@@ -7,8 +7,11 @@ namespace BlazorWebAssemblyApp.Pages;
 [Authorize(Roles = "Admin")]
 public partial class Author
 {
+    [Inject]
+    public NavigationManager Navigation { get; set; } = default!;
+
     [Parameter]
-    public int IdEdit { get; set; } = 0;
+    public int IdEdit { get; set; }
 
     private AuthorDTO? author;
     private string headerTitle = "Create New Author";
@@ -30,9 +33,7 @@ public partial class Author
     protected async Task OnValidSubmit()
     {
         if (author is null)
-        {
             return;
-        }
 
         var response = IdEdit != 0
             ? await AuthorsService.UpdateAuthor(author.Id, author)
@@ -42,17 +43,17 @@ public partial class Author
         {
             await NotificationService.ShowWarningAsync(
                 response.Message,
-                IdEdit != 0 ? "Error updating author" : "Error adding author");
+                IdEdit != 0 ? "Error Updating Author" : "Error Adding Author");
 
             return;
         }
 
         await NotificationService.ShowSuccessAsync(response.Message);
-        navigation.NavigateTo("/authors");
+        Navigation.NavigateTo("/authors");
     }
 
     private void NavigateBackToList()
     {
-        navigation.NavigateTo("/authors");
+        Navigation.NavigateTo("/authors");
     }
 }

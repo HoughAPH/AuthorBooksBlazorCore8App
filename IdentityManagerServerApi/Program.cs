@@ -3,6 +3,7 @@ using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SharedClassLibrary.Contracts;
@@ -39,6 +40,8 @@ builder.Services.AddSwaggerGen();
 string defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
 
+builder.Services.AddHealthChecks();
+
 if (!builder.Environment.IsEnvironment("IntegrationTesting"))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -47,7 +50,17 @@ if (!builder.Environment.IsEnvironment("IntegrationTesting"))
     });
 }
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+})
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager()
     .AddRoles<IdentityRole>()
@@ -99,6 +112,15 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("writes", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 20;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueLimit = 0;
+    });
+});
 
 WebApplication app = builder.Build();
 
@@ -116,6 +138,7 @@ app.UseCors("BlazorWebassembly");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();

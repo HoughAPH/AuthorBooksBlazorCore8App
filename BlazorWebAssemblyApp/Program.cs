@@ -11,9 +11,12 @@ WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+string apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
+    ?? throw new InvalidOperationException("Missing configuration: ApiSettings:BaseUrl");
+
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://localhost:7202/")
+    BaseAddress = new Uri(apiBaseUrl)
 });
 
 builder.Services.AddAuthorizationCore();
