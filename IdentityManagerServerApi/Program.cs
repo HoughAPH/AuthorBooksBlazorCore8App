@@ -1,5 +1,6 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
+using IdentityManagerServerApi.Extensions;
 using IdentityManagerServerApi.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -134,6 +135,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseSecurityHeaders();
 app.UseCors("BlazorWebassembly");
 app.UseAuthentication();
 app.UseAuthorization();
