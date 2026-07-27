@@ -1,8 +1,8 @@
 ﻿using IdentityManagerServerApi.Data;
+using IdentityManagerServerApi.Entities;
 using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.Models;
 using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace IdentityManagerServerApi.Repositories;

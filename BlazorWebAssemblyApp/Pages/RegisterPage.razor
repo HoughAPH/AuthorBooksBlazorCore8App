@@ -16,19 +16,19 @@
 
                         @* Fullname *@
                         <div class="form-group mb-3">
-                            <input @bind="User.Name"
+                            <InputText @bind-Value="User.Name"
                                    class="form-control"
                                    placeholder="Fullname">
-                            </input>
+                            </InputText>
                         </div>
 
                         @* Email Address *@
                         <div class="form-group mb-3">
-                            <input @bind="User.Email"
+                            <InputText @bind-Value="User.Email"
                                    class="form-control"
                                    type="email"
                                    placeholder="Email Address">
-                            </input>
+                            </InputText>
                         </div>
                         <div class="mb-3" style="@(role == "Admin" ? "display:block": "display:hidden")">
                             <label class="form-label">Role</label>
@@ -40,12 +40,13 @@
                         @* Password *@
                         <div class="form-group">
                             <div class="input-group mb-3">
-                                <input type="@(ShowPassword is true? "text":"password")"
-                                       class="form-control"
-                                       @bind="User.Password"
-                                       placeholder="Password"
-                                       aria-label="Password"
-                                       aria-describedby="Password">
+                                <InputText @bind-Value="User.Password"
+                                           class="form-control"
+                                           type="@(ShowPassword is true? "text":"password")"
+                                           placeholder="Password"
+                                           aria-label="Password"
+                                           aria-describedby="Password">
+                                </InputText>
 
                                 <span class="input-group-text cursorStyle"
                                       id="Password"
@@ -56,12 +57,13 @@
                         @* Confirm Password *@
                         <div class="form-group">
                             <div class="input-group mb-3">
-                                <input type="@(ShowConfirmPassword is true? "text":"password")"
-                                       class="form-control"
-                                       @bind="User.ConfirmPassword"
-                                       placeholder="Confirm Password"
-                                       aria-label="ConfirmPassword"
-                                       aria-describedby="Confirm-Password">
+                                <InputText @bind-Value="User.ConfirmPassword"
+                                           class="form-control"
+                                           type="@(ShowConfirmPassword is true? "text":"password")"
+                                           placeholder="Confirm Password"
+                                           aria-label="ConfirmPassword"
+                                           aria-describedby="Confirm-Password">
+                                </InputText>
 
                                 <span class="input-group-text cursorStyle"
                                       id="ConfirmPassword"

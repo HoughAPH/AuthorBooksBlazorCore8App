@@ -4,7 +4,7 @@
 @using SharedClassLibrary.Contracts
 @using SharedClassLibrary.DTOs
 @using Microsoft.AspNetCore.Authorization
-
+    
 @attribute [Authorize]
 @inject IBooks BookService
 @inject IAuthors AuthorService
@@ -59,10 +59,10 @@ else
                             <AuthorizeView Roles="Admin">
                                 <Authorized>
                                     <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToBookPage(book.Id))">
-                                        <i class="oi oi-pencil">Edit</i>
+                                        <i class="icon-link oi oi-pencil">Edit</i>
                                     </button>
                                     <button type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(book))">
-                                        <i class="oi oi-trash">Delete</i>
+                                        <i class="icon-link oi oi-trash">Delete</i>
                                     </button>
                                 </Authorized>
                             </AuthorizeView>
@@ -71,13 +71,17 @@ else
                 }
             </tbody>
         </table>
+        <Pagination CurrentPage="currentPage" TotalPages="totalPages" />
+
     </div>
 }
 
 @code {
     [Parameter]
     public int AuthorId { get; set; } = 0;
-
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages;
     private IEnumerable<BookDTO>? books;
     private string pageHeading = "All Books";
 
@@ -96,12 +100,15 @@ else
                 : $"Books for {author.Name}";
 
             books = await BookService.GetAuthorBooks(AuthorId);
+
         }
         else
         {
             pageHeading = "All Books";
             books = await BookService.GetBooks();
         }
+        var totalItems = books.Count();
+        totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
     }
 
     private async Task DeleteAsync(BookDTO book)
@@ -160,4 +167,6 @@ else
     {
         NavigationManager.NavigateTo("/books");
     }
+
+
 }

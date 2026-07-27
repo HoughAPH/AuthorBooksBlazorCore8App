@@ -17,16 +17,17 @@ else
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
+                <div class="mb-3">
+                    <button type="button" class="btn btn-secondary" @onclick="NavigateBackToList">
+                        @(IdEdit != 0 ? "Back to List" : "Cancel")
+                    </button>
+                </div>
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">@headerTitle</h3>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-secondary" @onclick="NavigateBackToList">
-                                @(IdEdit != 0 ? "Back to List" : "Cancel")
-                            </button>
-                        </div>
+                        
                         <EditForm Enhance Model="author" OnValidSubmit="OnValidSubmit">
                             <DataAnnotationsValidator />
                             <ValidationSummary />

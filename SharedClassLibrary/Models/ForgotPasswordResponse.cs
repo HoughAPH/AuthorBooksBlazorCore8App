@@ -1,3 +1,5 @@
+namespace SharedClassLibrary.Models;
+
 public class ForgotPasswordResponse
 {
     public bool Success { get; set; }
