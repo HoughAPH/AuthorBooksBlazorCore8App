@@ -25,6 +25,7 @@
 }
 else
 {
+    <div class="table-interactive">
     <table class="table table-sm table-striped mt-2" style="--bs-table-striped-bg: rgba(0, 0, 0, 0.15);">
         <tbody>
             @foreach (var author in authors)
@@ -51,11 +52,21 @@ else
             }
         </tbody>
     </table>
+        @if (totalPages > 1)
+        {
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="totalPages"
+                        OnPageChanged="HandlePageChangedAsync" />
+        }
+    </div>
 }
 
 @code {
     private List<AuthorDTO>? authors;
-
+    private IEnumerable<AuthorDTO> allAuthors = Enumerable.Empty<AuthorDTO>();
+    private int currentPage = 1;
+    private int pageSize = 5;
+    private int totalPages;
     protected override async Task OnInitializedAsync()
     {
         await LoadAuthorsAsync();
@@ -63,7 +74,21 @@ else
 
     private async Task LoadAuthorsAsync()
     {
-        authors = await AuthorsService.GetAuthors();
+        allAuthors = await AuthorsService.GetAuthors();
+
+        var totalItems = allAuthors.Count();
+        totalPages = totalItems == 0
+            ? 1
+            : (int)Math.Ceiling((double)totalItems / pageSize);
+
+        if (currentPage > totalPages)
+        {
+            currentPage = totalPages;
+        }
+        authors = allAuthors
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 
     private async Task DeleteAsync(int id)
@@ -97,6 +122,12 @@ else
     private void NavigateToAuthorPage()
     {
         Navigation.NavigateTo("/author");
+    }
+
+    private async Task HandlePageChangedAsync(int page)
+    {
+        currentPage = page;
+        await LoadAuthorsAsync();
     }
 }
 
