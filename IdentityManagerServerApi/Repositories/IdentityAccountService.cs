@@ -108,7 +108,7 @@ public class IdentityAccountService(
             Id = user.Id,
             Name = user.Name ?? user.UserName,
             Email = user.Email,
-            Role = roles.FirstOrDefault()
+            Roles = [.. roles],
         };
     }
 

@@ -62,7 +62,7 @@
         if (response.Flag)
         {
             await AuthStateProvider.RefreshUserStateAsync();
-            NavManager.NavigateTo("/", forceLoad: true);
+            NavManager.NavigateTo("/");
             return;
         }
 

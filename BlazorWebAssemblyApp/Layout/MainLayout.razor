@@ -38,7 +38,7 @@
     {
         await AccountService.LogoutAccount();
         AuthStateProvider.NotifyUserLogout();
-        NavManager.NavigateTo("/login", forceLoad: true);
+        NavManager.NavigateTo("/login");
     }
 
     private void Signup()
