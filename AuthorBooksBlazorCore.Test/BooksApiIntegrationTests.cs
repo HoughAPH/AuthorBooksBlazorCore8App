@@ -53,9 +53,12 @@ public class BooksApiIntegrationTests
 
         List<BookDTO>? books = await response.Content.ReadFromJsonAsync<List<BookDTO>>();
         Assert.That(books, Is.Not.Null);
-        Assert.That(books!.Count, Is.EqualTo(2));
-        Assert.That(books.Any(x => x.Title == "Domain Driven Design"), Is.True);
-        Assert.That(books.Any(x => x.Title == "Clean Code"), Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(books!.Count, Is.EqualTo(2));
+            Assert.That(books.Any(x => x.Title == "Domain Driven Design"), Is.True);
+            Assert.That(books.Any(x => x.Title == "Clean Code"), Is.True);
+        }
     }
 
     [Test]
@@ -67,9 +70,12 @@ public class BooksApiIntegrationTests
 
         List<BookDTO>? books = await response.Content.ReadFromJsonAsync<List<BookDTO>>();
         Assert.That(books, Is.Not.Null);
-        Assert.That(books!.Count, Is.EqualTo(1));
-        Assert.That(books[0].AuthorId, Is.EqualTo(1));
-        Assert.That(books[0].Title, Is.EqualTo("Domain Driven Design"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(books!.Count, Is.EqualTo(1));
+            Assert.That(books[0].AuthorId, Is.EqualTo(1));
+            Assert.That(books[0].Title, Is.EqualTo("Domain Driven Design"));
+        }
     }
 
     [Test]
@@ -81,8 +87,11 @@ public class BooksApiIntegrationTests
 
         BookDTO? book = await response.Content.ReadFromJsonAsync<BookDTO>();
         Assert.That(book, Is.Not.Null);
-        Assert.That(book!.Id, Is.EqualTo(1));
-        Assert.That(book.Title, Is.EqualTo("Domain Driven Design"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(book!.Id, Is.EqualTo(1));
+            Assert.That(book.Title, Is.EqualTo("Domain Driven Design"));
+        }
     }
 
     [Test]
@@ -216,12 +225,12 @@ internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSche
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.ContainsKey(RoleHeaderName))
+        if (!Request.Headers.TryGetValue(RoleHeaderName, out Microsoft.Extensions.Primitives.StringValues value))
         {
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        string role = Request.Headers[RoleHeaderName].ToString();
+        string role = value.ToString();
 
         Claim[] claims =
         [

@@ -174,12 +174,12 @@ public class AuthorControllerTests
         AuthorizeAttribute[] methodAuthorizeAttributes =
             method.GetCustomAttributes<AuthorizeAttribute>().ToArray();
 
-        Assert.Multiple(() =>
+        using (Assert.EnterMultipleScope())
         {
             Assert.That(controllerAttribute, Is.Not.Null);
             Assert.That(allowAnonymous, Is.Null);
             Assert.That(methodAuthorizeAttributes.Any(a => !string.IsNullOrWhiteSpace(a.Roles)), Is.False);
-        });
+        }
     }
 
     private static void AssertRequiresAdminRole(string actionName)
@@ -194,12 +194,12 @@ public class AuthorControllerTests
         AllowAnonymousAttribute? allowAnonymous =
             method.GetCustomAttribute<AllowAnonymousAttribute>();
 
-        Assert.Multiple(() =>
+        using (Assert.EnterMultipleScope())
         {
             Assert.That(controllerAttribute, Is.Not.Null);
             Assert.That(allowAnonymous, Is.Null);
             Assert.That(methodAttribute, Is.Not.Null);
             Assert.That(methodAttribute!.Roles, Is.EqualTo("Admin"));
-        });
+        }
     }
 }

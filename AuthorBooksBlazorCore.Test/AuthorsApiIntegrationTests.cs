@@ -49,9 +49,12 @@ public class AuthorsApiIntegrationTests
 
         List<AuthorDTO>? authors = await response.Content.ReadFromJsonAsync<List<AuthorDTO>>();
         Assert.That(authors, Is.Not.Null);
-        Assert.That(authors!.Count, Is.EqualTo(3));
-        Assert.That(authors.Any(x => x.Name == "Eric Evans"), Is.True);
-        Assert.That(authors.Any(x => x.Name == "Robert Martin"), Is.True);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(authors!.Count, Is.EqualTo(3));
+            Assert.That(authors.Any(x => x.Name == "Eric Evans"), Is.True);
+            Assert.That(authors.Any(x => x.Name == "Robert Martin"), Is.True);
+        }
     }
 
     [Test]
@@ -63,8 +66,11 @@ public class AuthorsApiIntegrationTests
 
         AuthorDTO? author = await response.Content.ReadFromJsonAsync<AuthorDTO>();
         Assert.That(author, Is.Not.Null);
-        Assert.That(author!.Id, Is.EqualTo(1));
-        Assert.That(author.Name, Is.EqualTo("Eric Evans"));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(author!.Id, Is.EqualTo(1));
+            Assert.That(author.Name, Is.EqualTo("Eric Evans"));
+        }
     }
 
     [Test]
@@ -102,8 +108,11 @@ public class AuthorsApiIntegrationTests
 
         GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.Flag, Is.True);
-        Assert.That(result.Message, Is.EqualTo("Author added successfully."));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result!.Flag, Is.True);
+            Assert.That(result.Message, Is.EqualTo("Author added successfully."));
+        }
 
         List<AuthorDTO>? authors = await _adminClient.GetFromJsonAsync<List<AuthorDTO>>("/api/Author/GetAuthors");
         Assert.That(authors, Is.Not.Null);
@@ -139,8 +148,11 @@ public class AuthorsApiIntegrationTests
 
         GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.Flag, Is.True);
-        Assert.That(result.Message, Is.EqualTo("Author updated successfully."));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result!.Flag, Is.True);
+            Assert.That(result.Message, Is.EqualTo("Author updated successfully."));
+        }
 
         AuthorDTO? updated = await _adminClient.GetFromJsonAsync<AuthorDTO>("/api/Author/GetAuthor/1");
         Assert.That(updated, Is.Not.Null);

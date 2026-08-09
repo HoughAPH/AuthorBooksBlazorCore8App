@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using SharedClassLibrary.DTOs;
 
-namespace BlazorWebAssemblyApp.Pages;
+namespace BlazorWebAssemblyApp.Pages.Authors;
 
 [Authorize(Roles = "Admin")]
 public partial class Author
