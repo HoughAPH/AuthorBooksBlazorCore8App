@@ -7,14 +7,9 @@ using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralRespon
 
 namespace IdentityManagerServerApi.Repositories;
 
-public class BooksRepository : IBooks
+public class BooksRepository(AppDbContext dbContext) : IBooks
 {
-    private readonly AppDbContext _dbContext;
-
-    public BooksRepository(AppDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<IEnumerable<BookDTO>> GetBooks()
     {

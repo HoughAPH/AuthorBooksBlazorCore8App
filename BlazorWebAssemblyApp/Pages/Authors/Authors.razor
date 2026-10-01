@@ -63,7 +63,7 @@ else
 
 @code {
     private List<AuthorDTO>? authors;
-    private IEnumerable<AuthorDTO> allAuthors = Enumerable.Empty<AuthorDTO>();
+    private List<AuthorDTO> allAuthors = []; //Enumerable.Empty<AuthorDTO>();
     private int currentPage = 1;
     private int pageSize = 5;
     private int totalPages;

@@ -29,6 +29,7 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     loggerConfiguration.ReadFrom.Configuration(context.Configuration);
 });
 
+
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? ["https://localhost:7254"];

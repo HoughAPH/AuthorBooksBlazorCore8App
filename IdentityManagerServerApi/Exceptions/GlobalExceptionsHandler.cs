@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace IdentityManagerServerApi.Exceptions;
 
@@ -19,10 +20,21 @@ public class GlobalExceptionsHandler(
             "Unhandled exception occurred. TraceId: {TraceId}",
             traceId);
 
+        (HttpStatusCode statusCode, string? title) = exception switch
+        {
+            KeyNotFoundException => (HttpStatusCode.NotFound, "Resource Not Found"),
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized Access"),
+            ArgumentException or InvalidOperationException => (HttpStatusCode.BadRequest, "Bad Request"),
+            _ => (HttpStatusCode.InternalServerError, "Internal Server Error")
+        };
+
+        httpContext.Response.StatusCode = (int)statusCode;
+        httpContext.Response.ContentType = "application/json";
+
         ProblemDetails problemDetails = new()
         {
             Title = "Server Error",
-            Status = StatusCodes.Status500InternalServerError,
+            Status = (int)statusCode,
             Detail = environment.IsDevelopment()
                 ? exception.Message
                 : "An unexpected error occurred.",

@@ -89,7 +89,7 @@ else
     private int pageSize = 5;
     private int totalPages;
     private IEnumerable<BookDTO>? books;
-    private IEnumerable<BookDTO> allBooks = Enumerable.Empty<BookDTO>();
+    private IEnumerable<BookDTO> allBooks = [];
     private string pageHeading = "All Books";
 
     protected override async Task OnParametersSetAsync()
@@ -107,12 +107,12 @@ else
                 ? "Books for Selected Author"
                 : $"Books for {author.Name}";
 
-            allBooks = await BookService.GetAuthorBooks(AuthorId) ?? Enumerable.Empty<BookDTO>();
+            allBooks = await BookService.GetAuthorBooks(AuthorId);
         }
         else
         {
             pageHeading = "All Books";
-            allBooks = await BookService.GetBooks() ?? Enumerable.Empty<BookDTO>();
+            allBooks = await BookService.GetBooks();
         }
 
         var totalItems = allBooks.Count();
