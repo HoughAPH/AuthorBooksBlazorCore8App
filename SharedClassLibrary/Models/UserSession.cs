@@ -1,3 +1,9 @@
 ﻿namespace SharedClassLibrary.Models;
 
-public record UserSession(string? Id, string? Name, string? Email, string? Role);
+// A simple record to pass user claims around statelessly
+public record UserSession(
+    string Id,
+    string Name,
+    string Email,
+    string Role
+);

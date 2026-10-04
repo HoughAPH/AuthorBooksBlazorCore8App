@@ -8,8 +8,6 @@
 
   <ItemGroup>
     <Compile Remove="Contracts\IWeather.cs" />
-    <Compile Remove="Helpers\JwtHelper.cs" />
-    <Compile Remove="Models\UserSession.cs" />
     <Compile Remove="Models\WeatherForecast.cs" />
   </ItemGroup>
 
