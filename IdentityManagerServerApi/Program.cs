@@ -2,12 +2,15 @@ using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Extensions;
 using IdentityManagerServerApi.Repositories;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SharedClassLibrary.Contracts;
+using System.Text;
+
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +31,6 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 
     loggerConfiguration.ReadFrom.Configuration(context.Configuration);
 });
-
 
 string[] allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -52,6 +54,9 @@ if (!builder.Environment.IsEnvironment("IntegrationTesting"))
     });
 }
 
+// ========================================================
+// FIXED STATELESS IDENTITY CONFIGURATION (JWT BEARER)
+// ========================================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -63,23 +68,13 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager()
-    .AddRoles<IdentityRole>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
+// Shut down the implicit browser cookie login redirects
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "__Host-AuthorBooks.Auth";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-    options.Cookie.Path = "/";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-    options.SlidingExpiration = true;
-
-    options.Events = new CookieAuthenticationEvents
+    options.Events = new Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationEvents
     {
         OnRedirectToLogin = context =>
         {
@@ -94,11 +89,37 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
+// ========================================================
+// JWT BEARER MIDDLEWARE SETUP
+// ========================================================
+string jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("JWT Key configuration is missing.");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "IdentityManagerServerApi",
+        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "BlazorWasmClient",
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
-builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
+//builder.Services.AddScoped(); // Fixed: Restored the complete user service registration
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
 
 builder.Services.AddCors(options =>
@@ -108,7 +129,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(allowedOrigins)
               .WithMethods("GET", "POST", "DELETE", "PUT", "HEAD")
               .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowCredentials(); // Required: the Blazor client sends requests with credentials mode 'include'
     });
 });
 
@@ -145,7 +166,6 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
-
 
 public partial class Program
 {
