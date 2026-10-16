@@ -236,7 +236,7 @@ Integrity is protected in layers, each catching what the previous one cannot:
 | Request validation | Required fields, formats, password confirmation | `[Required]` etc. on DTOs -> automatic `ValidationProblemDetails` |
 | **Domain invariants** | Name/title required, trimmed, <= 200 chars; no duplicate title per author (case-insensitive); book must exist to be updated/removed; author with books cannot be deleted | `Author`, `Book` |
 | Encapsulation | Nothing can bypass the rules: no public setters, no public `Book` constructor, no `DbSet<Book>`, read-only `Books` | `Domain/`, `AppDbContext` |
-| Database schema | NOT NULL, max length 200 on `Name` / `Title`, required foreign key, cascade delete | `AppDbContext.OnModelCreating` |
+| Database schema | NOT NULL, max length 200 on `Name` / `Title`, required foreign key, cascade delete, unique `(AuthorId, Title)` | `AppDbContext.OnModelCreating` |
 | Authorization / abuse limits | Only `Admin` can write; per-user write rate limit | Controllers, `RateLimitPolicies` |
 
 Concrete examples of what the old code allowed and the new code stops:
@@ -251,12 +251,7 @@ Concrete examples of what the old code allowed and the new code stops:
 
 ### Honest limitations (worth knowing)
 
-- **The duplicate-title rule is enforced in application code, not by a database unique index.** There is no unique
-  index on `(AuthorId, Title)` in `AppDbContext`. Two requests adding the same title to the same author at the
-  same moment could both pass the in-memory check and both save. If that matters, add
-  `HasIndex(b => new { b.AuthorId, b.Title }).IsUnique()` (mind case-sensitivity: the domain check is
-  case-insensitive; SQL Server's default collation is also case-insensitive, so they agree there) and map the
-  resulting `DbUpdateException` to a 409.
+- **Duplicate titles are enforced twice (this one is now closed).** The domain rejects them in memory  (`EnsureTitleIsUnique`), and a unique index on `Books(AuthorId, Title)` (migration `UniqueBookTitlePerAuthor`)  catches two concurrent requests that both pass that check. `AuthorRepository.SaveChanges` translates the database  error into the same 409 conflict. The index uses the column collation, which is case-insensitive on SQL Server's  default, so it agrees with the domain's case-insensitive check.
 - **There is no optimistic-concurrency token** (e.g. a `rowversion`). Two editors renaming the same author at once:
   last write wins.
 - **Cascade delete is configured at the database level**, so the "author with books can't be deleted" rule exists

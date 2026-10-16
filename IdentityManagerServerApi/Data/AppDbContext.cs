@@ -32,6 +32,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<Applicat
             book.ToTable("Books");
             book.HasKey(b => b.Id);
             book.Property(b => b.Title).IsRequired().HasMaxLength(Book.TitleMaxLength);
+
+            // Backstop for the domain's "no duplicate title per author" rule when two requests race.
+            book.HasIndex(b => new { b.AuthorId, b.Title }).IsUnique();
         });
     }
 }
