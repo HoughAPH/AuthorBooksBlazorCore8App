@@ -22,14 +22,7 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(userDTO)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (string.IsNullOrWhiteSpace(apiResponse))
-        {
-            return new GeneralResponse(false, "Error occurred. Try again later...");
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Account Created", "Error occurred. Try again later...");
     }
 
     public async Task<LoginResponse> LoginAccount(LoginDTO loginDTO)
@@ -40,12 +33,19 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(loginDTO)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
 
+        if (!response.IsSuccessStatusCode)
+        {
+            GeneralResponse failure = await ApiResponseReader.ToGeneralResponse(response, "", "Error occurred. Try again later...");
+            return new LoginResponse(false, string.Empty, failure.Message);
+        }
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(apiResponse))
         {
             return new LoginResponse(false, string.Empty, "Error occurred. Try again later...");
         }
+
         LoginResponse result = JsonHelper.DeserializeJsonString<LoginResponse>(apiResponse);
         if (result.Flag && !string.IsNullOrWhiteSpace(result.Token))
         {
@@ -107,8 +107,14 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
 
+        if (!response.IsSuccessStatusCode)
+        {
+            GeneralResponse failure = await ApiResponseReader.ToGeneralResponse(response, "", "Error occurred. Try again later...");
+            return (false, failure.Message);
+        }
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(apiResponse))
         {
             return (false, "Error occurred. Try again later...");
@@ -126,15 +132,9 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (string.IsNullOrWhiteSpace(apiResponse))
-        {
-            return (false, "Error occurred. Try again later...");
-        }
-
-        ApiResponse result = JsonHelper.DeserializeJsonString<ApiResponse>(apiResponse);
-        return (response.IsSuccessStatusCode, result.Message);
+        GeneralResponse result = await ApiResponseReader.ToGeneralResponse(
+            response, "Password reset successful", "Error occurred. Try again later...");
+        return (result.Flag, result.Message);
     }
 
     //public async Task<WeatherForecast[]> GetWeatherForecast()

@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using IdentityManagerServerApi.Features.Account.Commands;
+using IdentityManagerServerApi.Features.Account.Queries;
+using IdentityManagerServerApi.Features.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedClassLibrary.Contracts;
+using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
 using static SharedClassLibrary.Models.ServiceResponses;
@@ -9,62 +12,65 @@ namespace IdentityManagerServerApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AccountController(IUserAccount userAccount) : ControllerBase
+public class AccountController(
+    ICommandHandler<RegisterAccountCommand> register,
+    ICommandHandler<ResetPasswordCommand> resetPassword,
+    IQueryHandler<LoginQuery, Result<string>> login,
+    IQueryHandler<ForgotPasswordQuery, Result<string>> forgotPassword,
+    IQueryHandler<GetCurrentUserQuery, CurrentUserDto?> getCurrentUser) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<GeneralResponse>> Register([FromBody] UserDTO userDTO)
     {
-        GeneralResponse response = await userAccount.CreateAccount(userDTO);
-        return response.Flag ? Ok(response) : BadRequest(response);
+        Result result = await register.Handle(new RegisterAccountCommand(userDTO.Name, userDTO.Email, userDTO.Password));
+        return this.ToActionResult(result);
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginDTO loginDTO)
     {
-        LoginResponse response = await userAccount.LoginAccount(loginDTO);
-        return response.Flag ? Ok(response) : BadRequest(response);
+        Result<string> result = await login.Handle(new LoginQuery(loginDTO.Email, loginDTO.Password));
+
+        return result.Succeeded
+            ? Ok(new LoginResponse(true, result.Value!, result.Outcome.Message))
+            : this.ToActionResult(result.Outcome);
     }
 
+    // Tokens are stateless JWTs, so there is nothing to revoke server-side; the client discards its token.
     [Authorize]
     [HttpPost("logout")]
-    public async Task<ActionResult<GeneralResponse>> Logout()
-    {
-        GeneralResponse response = await userAccount.LogoutAccount();
-        return Ok(response);
-    }
+    public ActionResult<GeneralResponse> Logout() => Ok(new GeneralResponse(true, "Logged out"));
 
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<CurrentUserDto>> Me()
     {
-        CurrentUserDto? response = await userAccount.GetCurrentUser();
-        return response is null ? Unauthorized() : Ok(response);
+        CurrentUserDto? user = await getCurrentUser.Handle(new GetCurrentUserQuery(User));
+        return user is null ? Unauthorized() : Ok(user);
     }
 
     [AllowAnonymous]
     [HttpPost("reset-password")]
-    public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordDTO model)
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
+    public async Task<ActionResult<GeneralResponse>> ResetPassword([FromBody] ResetPasswordDTO model)
     {
-        (bool success, string? message) = await userAccount.ResetPassword(model);
-        ApiResponse response = new() { Message = message };
-
-        return success ? Ok(response) : BadRequest(response);
+        Result result = await resetPassword.Handle(new ResetPasswordCommand(model.Email!, model.Token, model.Password));
+        return this.ToActionResult(result);
     }
 
     [AllowAnonymous]
     [HttpPost("forgot-password")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordDTO model)
     {
-        (bool success, string? value) = await userAccount.ForgotPassword(model);
+        Result<string> result = await forgotPassword.Handle(new ForgotPasswordQuery(model.Email));
 
-        ForgotPasswordResponse response = new()
-        {
-            Success = success,
-            Token = value
-        };
-
-        return success ? Ok(response) : BadRequest(response);
+        return result.Succeeded
+            ? Ok(new ForgotPasswordResponse { Success = true, Token = result.Value! })
+            : this.ToActionResult(result.Outcome);
     }
 }

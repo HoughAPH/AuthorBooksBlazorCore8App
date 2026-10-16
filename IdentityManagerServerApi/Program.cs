@@ -1,5 +1,7 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
+using IdentityManagerServerApi.Features.Account.Commands;
+using IdentityManagerServerApi.Features.Account.Queries;
 using IdentityManagerServerApi.Features.Authors.Commands;
 using IdentityManagerServerApi.Features.Authors.Queries;
 using IdentityManagerServerApi.Features.Books.Commands;
@@ -121,7 +123,12 @@ builder.Services.AddScoped<IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>>, G
 builder.Services.AddScoped<IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>>, GetAuthorBooksHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBookQuery, BookDTO?>, GetBookHandler>();
 
-builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
+builder.Services.AddScoped<ICommandHandler<RegisterAccountCommand>, RegisterAccountHandler>();
+builder.Services.AddScoped<ICommandHandler<ResetPasswordCommand>, ResetPasswordHandler>();
+builder.Services.AddScoped<IQueryHandler<LoginQuery, Result<string>>, LoginHandler>();
+builder.Services.AddScoped<IQueryHandler<ForgotPasswordQuery, Result<string>>, ForgotPasswordHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCurrentUserQuery, CurrentUserDto?>, GetCurrentUserHandler>();
+
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
 
 builder.Services.AddCors(options =>

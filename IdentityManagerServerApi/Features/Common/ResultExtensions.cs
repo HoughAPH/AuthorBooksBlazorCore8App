@@ -19,6 +19,7 @@ public static class ResultExtensions
         {
             ResultStatus.NotFound => (StatusCodes.Status404NotFound, "Not Found"),
             ResultStatus.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
+            ResultStatus.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized"),
             _ => (StatusCodes.Status400BadRequest, "Bad Request")
         };
 
