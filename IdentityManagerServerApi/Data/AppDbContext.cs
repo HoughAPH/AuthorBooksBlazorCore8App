@@ -1,4 +1,4 @@
-﻿using IdentityManagerServerApi.Entities;
+﻿using IdentityManagerServerApi.Domain;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 namespace IdentityManagerServerApi.Data;

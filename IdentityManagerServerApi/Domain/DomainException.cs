@@ -1,3 +1,13 @@
-namespace IdentityManagerServerApi.Exceptions;
+namespace IdentityManagerServerApi.Domain;
 
-public class DomainException(string message) : Exception(message);
+public enum DomainErrorKind
+{
+    Validation,
+    Conflict,
+    NotFound
+}
+
+public class DomainException(string message, DomainErrorKind kind = DomainErrorKind.Validation) : Exception(message)
+{
+    public DomainErrorKind Kind { get; } = kind;
+}

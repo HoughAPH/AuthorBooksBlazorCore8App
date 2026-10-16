@@ -44,16 +44,7 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Author could not be added.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Author added successfully.", "Author could not be added.");
     }
 
     public async Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author)
@@ -64,42 +55,14 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Author could not be updated.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Author updated successfully.", "Author could not be updated.");
     }
 
     public async Task<GeneralResponse> DeleteAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Author not found.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Author could not be deleted.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        return string.IsNullOrWhiteSpace(apiResponse)
-            ? new(true, "Author deleted successfully.")
-            : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Author deleted successfully.", "Author could not be deleted.");
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)

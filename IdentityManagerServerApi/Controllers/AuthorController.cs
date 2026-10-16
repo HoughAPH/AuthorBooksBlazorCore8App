@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using IdentityManagerServerApi.Features.Authors.Commands;
+using IdentityManagerServerApi.Features.Authors.Queries;
+using IdentityManagerServerApi.Features.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedClassLibrary.Contracts;
+using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
 using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
@@ -9,13 +12,18 @@ namespace IdentityManagerServerApi.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class AuthorController(IAuthors authorsRepo) : ControllerBase
+public class AuthorController(
+    IQueryHandler<GetAuthorsQuery, List<AuthorDTO>> getAuthors,
+    IQueryHandler<GetAuthorQuery, AuthorDTO?> getAuthor,
+    ICommandHandler<CreateAuthorCommand> createAuthor,
+    ICommandHandler<RenameAuthorCommand> renameAuthor,
+    ICommandHandler<DeleteAuthorCommand> deleteAuthor) : ControllerBase
 {
     [HttpGet]
     [Route("GetAuthors")]
     public async Task<ActionResult<List<AuthorDTO>>> GetAuthors()
     {
-        List<AuthorDTO> authors = await authorsRepo.GetAuthors();
+        List<AuthorDTO> authors = await getAuthors.Handle(new GetAuthorsQuery());
         return Ok(authors);
     }
 
@@ -23,7 +31,7 @@ public class AuthorController(IAuthors authorsRepo) : ControllerBase
     [Route("GetAuthor/{id}")]
     public async Task<ActionResult<AuthorDTO>> GetAuthor(int id)
     {
-        AuthorDTO? author = await authorsRepo.GetAuthor(id);
+        AuthorDTO? author = await getAuthor.Handle(new GetAuthorQuery(id));
 
         if (author is null)
             return NotFound();
@@ -34,45 +42,30 @@ public class AuthorController(IAuthors authorsRepo) : ControllerBase
     [HttpPost]
     [Route("AddAuthor")]
     [Authorize(Roles = "Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<GeneralResponse>> AddAuthor(AuthorDTO author)
     {
-        GeneralResponse result = await authorsRepo.AddAuthor(author);
-
-        if (!result.Flag)
-            return BadRequest(result);
-
-        return Ok(result);
+        Result result = await createAuthor.Handle(new CreateAuthorCommand(author.Name));
+        return this.ToActionResult(result);
     }
 
     [HttpPut]
     [Route("UpdateAuthor/{id}")]
     [Authorize(Roles = "Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<GeneralResponse>> UpdateAuthor(int id, AuthorDTO author)
     {
-        GeneralResponse result = await authorsRepo.UpdateAuthor(id, author);
-
-        if (!result.Flag && result.Message == "Author not found.")
-            return NotFound(result);
-
-        if (!result.Flag)
-            return BadRequest(result);
-
-        return Ok(result);
+        Result result = await renameAuthor.Handle(new RenameAuthorCommand(id, author.Name));
+        return this.ToActionResult(result);
     }
 
     [HttpDelete]
     [Route("DeleteAuthor/{id}")]
     [Authorize(Roles = "Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<GeneralResponse>> DeleteAuthor(int id)
     {
-        GeneralResponse result = await authorsRepo.DeleteAuthor(id);
-
-        if (!result.Flag && result.Message == "Author not found.")
-            return NotFound(result);
-
-        if (!result.Flag)
-            return BadRequest(result);
-
-        return Ok(result);
+        Result result = await deleteAuthor.Handle(new DeleteAuthorCommand(id));
+        return this.ToActionResult(result);
     }
 }

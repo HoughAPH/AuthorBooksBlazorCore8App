@@ -1,5 +1,5 @@
 ﻿using IdentityManagerServerApi.Data;
-using IdentityManagerServerApi.Entities;
+using IdentityManagerServerApi.Domain;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -70,11 +70,15 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         return client;
     }
 
-    public HttpClient CreateAuthenticatedClient(string role)
+    public HttpClient CreateAuthenticatedClient(string role, string? userId = null)
     {
         HttpClient client = CreateAnonymousClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName);
         client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeaderName, role);
+
+        if (userId is not null)
+            client.DefaultRequestHeaders.Add(TestAuthHandler.UserHeaderName, userId);
+
         return client;
     }
 

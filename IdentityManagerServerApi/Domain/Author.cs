@@ -1,6 +1,6 @@
 ﻿using IdentityManagerServerApi.Exceptions;
 
-namespace IdentityManagerServerApi.Entities;
+namespace IdentityManagerServerApi.Domain;
 
 /// <summary>
 /// Aggregate root. <see cref="Book"/> can only be created, changed or removed through this type.
@@ -61,12 +61,12 @@ public class Author
     public void EnsureCanBeDeleted()
     {
         if (_books.Count > 0)
-            throw new DomainException("Author cannot be deleted because the author has books.");
+            throw new DomainException("Author cannot be deleted because the author has books.", DomainErrorKind.Conflict);
     }
 
     private Book GetBook(int bookId) =>
         _books.FirstOrDefault(b => b.Id == bookId)
-        ?? throw new DomainException("Book not found.");
+        ?? throw new DomainException("Book not found.", DomainErrorKind.NotFound);
 
     private void EnsureTitleIsUnique(string title, int? exceptBookId)
     {
@@ -74,7 +74,7 @@ public class Author
             b.Id != exceptBookId && string.Equals(b.Title, title, StringComparison.OrdinalIgnoreCase));
 
         if (duplicate)
-            throw new DomainException("This author already has a book with that title.");
+            throw new DomainException("This author already has a book with that title.", DomainErrorKind.Conflict);
     }
 
     private static string NormalizeName(string? name)

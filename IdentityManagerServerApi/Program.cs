@@ -1,5 +1,10 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
+using IdentityManagerServerApi.Features.Authors.Commands;
+using IdentityManagerServerApi.Features.Authors.Queries;
+using IdentityManagerServerApi.Features.Books.Commands;
+using IdentityManagerServerApi.Features.Books.Queries;
+using IdentityManagerServerApi.Features.Common;
 using IdentityManagerServerApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SharedClassLibrary.Contracts;
+using SharedClassLibrary.DTOs;
 using System.Text;
 
 
@@ -100,8 +106,21 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<IBooks, BooksRepository>();
-builder.Services.AddScoped<IAuthors, AuthorsRepository>();
+builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
+
+builder.Services.AddScoped<ICommandHandler<CreateAuthorCommand>, CreateAuthorHandler>();
+builder.Services.AddScoped<ICommandHandler<RenameAuthorCommand>, RenameAuthorHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteAuthorCommand>, DeleteAuthorHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAuthorsQuery, List<AuthorDTO>>, GetAuthorsHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAuthorQuery, AuthorDTO?>, GetAuthorHandler>();
+
+builder.Services.AddScoped<ICommandHandler<AddBookCommand>, AddBookHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateBookCommand>, UpdateBookHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteBookCommand>, DeleteBookHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>>, GetBooksHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>>, GetAuthorBooksHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBookQuery, BookDTO?>, GetBookHandler>();
+
 builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
 
@@ -118,15 +137,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
 builder.Services.AddProblemDetails();
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("writes", limiterOptions =>
-    {
-        limiterOptions.PermitLimit = 20;
-        limiterOptions.Window = TimeSpan.FromMinutes(1);
-        limiterOptions.QueueLimit = 0;
-    });
-});
+builder.Services.AddApiRateLimiting(builder.Configuration);
 
 WebApplication app = builder.Build();
 
@@ -144,6 +155,7 @@ app.UseSecurityHeaders();
 app.UseCors("BlazorWebassembly");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapHealthChecks("/health");
 app.MapControllers();

@@ -35,6 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Compiled in directly: referencing BlazorWebAssemblyApp would clash with the API's top-level Program type. -->
+    <Compile Include="..\BlazorWebAssemblyApp\Services\ApiResponseReader.cs" Link="Linked\ApiResponseReader.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 

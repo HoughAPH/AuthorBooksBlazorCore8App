@@ -1,6 +1,6 @@
 ﻿using IdentityManagerServerApi.Exceptions;
 
-namespace IdentityManagerServerApi.Entities;
+namespace IdentityManagerServerApi.Domain;
 
 public class Book
 {

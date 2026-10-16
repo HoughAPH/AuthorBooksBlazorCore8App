@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SharedClassLibrary.DTOs;
@@ -185,6 +186,81 @@ public class BooksApiIntegrationTests
     }
 
     [Test]
+    public async Task AddBook_WhenAuthorDoesNotExist_ReturnsNotFoundProblem()
+    {
+        HttpResponseMessage response = await _adminClient.PostAsJsonAsync(
+            "/api/Book/AddBook", new BookDTO { Title = "Orphan", AuthorId = 999 });
+
+        await AssertProblem(response, HttpStatusCode.NotFound, "Author not found.");
+    }
+
+    [Test]
+    public async Task AddBook_WithDuplicateTitleForSameAuthor_ReturnsConflictProblem()
+    {
+        HttpResponseMessage response = await _adminClient.PostAsJsonAsync(
+            "/api/Book/AddBook", new BookDTO { Title = "domain driven design", AuthorId = 1 });
+
+        await AssertProblem(response, HttpStatusCode.Conflict, "This author already has a book with that title.");
+    }
+
+    [Test]
+    public async Task AddBook_WithTooLongTitle_ReturnsBadRequestProblem()
+    {
+        HttpResponseMessage response = await _adminClient.PostAsJsonAsync(
+            "/api/Book/AddBook", new BookDTO { Title = new string('b', 201), AuthorId = 1 });
+
+        await AssertProblem(response, HttpStatusCode.BadRequest, "Book title cannot exceed 200 characters.");
+    }
+
+    [Test]
+    public async Task UpdateBook_WhenBookDoesNotExist_ReturnsNotFoundProblem()
+    {
+        HttpResponseMessage response = await _adminClient.PutAsJsonAsync(
+            "/api/Book/UpdateBook/999", new BookDTO { Id = 999, Title = "Ghost", AuthorId = 1 });
+
+        await AssertProblem(response, HttpStatusCode.NotFound, "Book not found.");
+    }
+
+    [Test]
+    public async Task UpdateBook_WhenMovedToAnotherAuthor_KeepsBookId()
+    {
+        HttpResponseMessage response = await _adminClient.PutAsJsonAsync(
+            "/api/Book/UpdateBook/1", new BookDTO { Id = 1, Title = "Domain Driven Design", AuthorId = 3 });
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        BookDTO? moved = await _adminClient.GetFromJsonAsync<BookDTO>("/api/Book/GetBook/1");
+        Assert.That(moved, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(moved!.AuthorId, Is.EqualTo(3));
+            Assert.That(moved.AuthorName, Is.EqualTo("Removable Author"));
+        }
+    }
+
+    [Test]
+    public async Task DeleteBook_WhenBookDoesNotExist_ReturnsNotFoundProblem()
+    {
+        HttpResponseMessage response = await _adminClient.DeleteAsync("/api/Book/DeleteBook/999");
+
+        await AssertProblem(response, HttpStatusCode.NotFound, "Book not found.");
+    }
+
+    private static async Task AssertProblem(HttpResponseMessage response, HttpStatusCode status, string detail)
+    {
+        Assert.That(response.StatusCode, Is.EqualTo(status));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/problem+json"));
+
+        ProblemDetails? problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.That(problem, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(problem!.Status, Is.EqualTo((int)status));
+            Assert.That(problem.Detail, Is.EqualTo(detail));
+        }
+    }
+
+    [Test]
     public async Task DeleteBook_WhenAuthenticatedButNotAdmin_ReturnsForbidden()
     {
         HttpResponseMessage response = await _userClient.DeleteAsync("/api/Book/DeleteBook/1");
@@ -212,6 +288,8 @@ internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSche
 {
     internal const string SchemeName = "TestScheme";
     internal const string RoleHeaderName = "X-Test-Role";
+    internal const string UserHeaderName = "X-Test-User";
+    internal const string DefaultUserId = "integration-test-user";
     internal const string AdminRole = "Admin";
     internal const string UserRole = "User";
 
@@ -231,11 +309,14 @@ internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSche
         }
 
         string role = value.ToString();
+        string userId = Request.Headers.TryGetValue(UserHeaderName, out Microsoft.Extensions.Primitives.StringValues user)
+            ? user.ToString()
+            : DefaultUserId;
 
         Claim[] claims =
         [
-            new Claim(ClaimTypes.NameIdentifier, "integration-test-user"),
-            new Claim(ClaimTypes.Name, "integration-test-user"),
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Name, userId),
             new Claim(ClaimTypes.Email, "integration@test.local"),
             new Claim(ClaimTypes.Role, role)
         ];

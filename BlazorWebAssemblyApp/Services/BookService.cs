@@ -54,16 +54,7 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Book could not be added.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Book added successfully.", "Book could not be added.");
     }
 
     public async Task<GeneralResponse> UpdateBook(int id, BookDTO book)
@@ -74,37 +65,14 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Book could not be updated.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Book updated successfully.", "Book could not be updated.");
     }
 
     public async Task<GeneralResponse> DeleteBook(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return string.IsNullOrWhiteSpace(apiResponse)
-                ? new(false, "Book not found.")
-                : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
-        }
-
-        response.EnsureSuccessStatusCode();
-
-        return string.IsNullOrWhiteSpace(apiResponse)
-            ? new(true, "Book removed successfully.")
-            : JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        return await ApiResponseReader.ToGeneralResponse(response, "Book deleted successfully.", "Book could not be deleted.");
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)

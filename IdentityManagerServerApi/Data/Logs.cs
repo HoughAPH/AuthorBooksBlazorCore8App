@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace IdentityManagerServerApi.Entities;
+namespace IdentityManagerServerApi.Data;
 
 public class Logs
 {

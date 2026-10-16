@@ -1,8 +1,10 @@
 using IdentityManagerServerApi.Controllers;
+using IdentityManagerServerApi.Features.Books.Commands;
+using IdentityManagerServerApi.Features.Books.Queries;
+using IdentityManagerServerApi.Features.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using System.Reflection;
 using static SharedClassLibrary.Models.ServiceResponses;
@@ -12,14 +14,27 @@ namespace AuthorBooksBlazorCore.Test;
 [TestFixture]
 public class BookControllerTests
 {
-    private Mock<IBooks> _booksRepo = null!;
+    private Mock<IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>>> _getBooks = null!;
+    private Mock<IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>>> _getAuthorBooks = null!;
+    private Mock<IQueryHandler<GetBookQuery, BookDTO?>> _getBook = null!;
+    private Mock<ICommandHandler<AddBookCommand>> _add = null!;
+    private Mock<ICommandHandler<UpdateBookCommand>> _update = null!;
+    private Mock<ICommandHandler<DeleteBookCommand>> _delete = null!;
     private BookController _controller = null!;
 
     [SetUp]
     public void Setup()
     {
-        _booksRepo = new Mock<IBooks>();
-        _controller = new BookController(_booksRepo.Object);
+        _getBooks = new();
+        _getAuthorBooks = new();
+        _getBook = new();
+        _add = new();
+        _update = new();
+        _delete = new();
+
+        _controller = new BookController(
+            _getBooks.Object, _getAuthorBooks.Object, _getBook.Object,
+            _add.Object, _update.Object, _delete.Object);
     }
 
     [Test]
@@ -67,15 +82,12 @@ public class BookControllerTests
             new() { Id = 2, Title = "Book 2", AuthorId = 20, AuthorName = "Author B" }
         ];
 
-        _booksRepo.Setup(x => x.GetBooks()).ReturnsAsync(expected);
+        _getBooks.Setup(x => x.Handle(It.IsAny<GetBooksQuery>())).ReturnsAsync(expected);
 
         ActionResult<IEnumerable<BookDTO>> result = await _controller.GetBooks();
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.SameAs(expected));
-        _booksRepo.Verify(x => x.GetBooks(), Times.Once);
+        Assert.That(((OkObjectResult)result.Result!).Value, Is.SameAs(expected));
     }
 
     [Test]
@@ -88,15 +100,12 @@ public class BookControllerTests
             new() { Id = 1, Title = "Book 1", AuthorId = authorId, AuthorName = "Author A" }
         ];
 
-        _booksRepo.Setup(x => x.GetAuthorBooks(authorId)).ReturnsAsync(expected);
+        _getAuthorBooks.Setup(x => x.Handle(new GetAuthorBooksQuery(authorId))).ReturnsAsync(expected);
 
         ActionResult<IEnumerable<BookDTO>> result = await _controller.GetAuthorBooks(authorId);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.SameAs(expected));
-        _booksRepo.Verify(x => x.GetAuthorBooks(authorId), Times.Once);
+        Assert.That(((OkObjectResult)result.Result!).Value, Is.SameAs(expected));
     }
 
     [Test]
@@ -110,90 +119,110 @@ public class BookControllerTests
             AuthorName = "Robert C. Martin"
         };
 
-        _booksRepo.Setup(x => x.GetBook(1)).ReturnsAsync(expected);
+        _getBook.Setup(x => x.Handle(new GetBookQuery(1))).ReturnsAsync(expected);
 
         ActionResult<BookDTO> result = await _controller.GetBook(1);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.SameAs(expected));
-        _booksRepo.Verify(x => x.GetBook(1), Times.Once);
+        Assert.That(((OkObjectResult)result.Result!).Value, Is.SameAs(expected));
     }
 
     [Test]
     public async Task GetBook_Should_Return_NotFound_When_Book_Does_Not_Exist()
     {
-        _booksRepo.Setup(x => x.GetBook(99)).ReturnsAsync((BookDTO?)null);
+        _getBook.Setup(x => x.Handle(new GetBookQuery(99))).ReturnsAsync((BookDTO?)null);
 
         ActionResult<BookDTO> result = await _controller.GetBook(99);
 
         Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-        _booksRepo.Verify(x => x.GetBook(99), Times.Once);
     }
 
     [Test]
     public async Task AddBook_Should_Return_Success_Response()
     {
-        BookDTO dto = new()
-        {
-            Title = "New Book",
-            AuthorId = 5
-        };
+        _add.Setup(x => x.Handle(new AddBookCommand("New Book", 5)))
+            .ReturnsAsync(Result.Ok("Book added successfully."));
 
-        GeneralResponse expected = new(true, "Book added successfully.");
-
-        _booksRepo.Setup(x => x.AddBook(dto)).ReturnsAsync(expected);
-
-        ActionResult<GeneralResponse> result = await _controller.AddBook(dto);
+        ActionResult<GeneralResponse> result =
+            await _controller.AddBook(new BookDTO { Title = "New Book", AuthorId = 5 });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(((OkObjectResult)result.Result!).Value,
+            Is.EqualTo(new GeneralResponse(true, "Book added successfully.")));
+    }
 
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.EqualTo(expected));
-        _booksRepo.Verify(x => x.AddBook(dto), Times.Once);
+    [Test]
+    public async Task AddBook_Should_Return_NotFound_When_Author_Is_Missing()
+    {
+        _add.Setup(x => x.Handle(It.IsAny<AddBookCommand>()))
+            .ReturnsAsync(Result.NotFound("Author not found."));
+
+        ActionResult<GeneralResponse> result =
+            await _controller.AddBook(new BookDTO { Title = "New Book", AuthorId = 5 });
+
+        AssertProblemStatus(result.Result, 404);
     }
 
     [Test]
     public async Task UpdateBook_Should_Return_Success_Response()
     {
-        const int id = 7;
+        _update.Setup(x => x.Handle(new UpdateBookCommand(7, "Updated Book", 5)))
+            .ReturnsAsync(Result.Ok("Book updated successfully."));
 
-        BookDTO dto = new()
-        {
-            Id = id,
-            Title = "Updated Book",
-            AuthorId = 5
-        };
-
-        GeneralResponse expected = new(true, "Book updated successfully.");
-
-        _booksRepo.Setup(x => x.UpdateBook(id, dto)).ReturnsAsync(expected);
-
-        ActionResult<GeneralResponse> result = await _controller.UpdateBook(id, dto);
+        ActionResult<GeneralResponse> result =
+            await _controller.UpdateBook(7, new BookDTO { Id = 7, Title = "Updated Book", AuthorId = 5 });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(((OkObjectResult)result.Result!).Value,
+            Is.EqualTo(new GeneralResponse(true, "Book updated successfully.")));
+    }
 
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.EqualTo(expected));
-        _booksRepo.Verify(x => x.UpdateBook(id, dto), Times.Once);
+    [Test]
+    public async Task UpdateBook_Should_Return_NotFound_When_Book_Is_Missing()
+    {
+        _update.Setup(x => x.Handle(It.IsAny<UpdateBookCommand>()))
+            .ReturnsAsync(Result.NotFound("Book not found."));
+
+        ActionResult<GeneralResponse> result =
+            await _controller.UpdateBook(7, new BookDTO { Title = "x", AuthorId = 5 });
+
+        AssertProblemStatus(result.Result, 404);
     }
 
     [Test]
     public async Task DeleteBook_Should_Return_True_When_Delete_Succeeds()
     {
-        const int id = 8;
-        GeneralResponse expected = new(true, "Book deleted successfully");
+        _delete.Setup(x => x.Handle(new DeleteBookCommand(8)))
+            .ReturnsAsync(Result.Ok("Book deleted successfully."));
 
-        _booksRepo.Setup(x => x.DeleteBook(id)).ReturnsAsync(expected);
-
-        ActionResult<GeneralResponse> result = await _controller.DeleteBook(id);
+        ActionResult<GeneralResponse> result = await _controller.DeleteBook(8);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        Assert.That(((OkObjectResult)result.Result!).Value,
+            Is.EqualTo(new GeneralResponse(true, "Book deleted successfully.")));
+    }
 
-        OkObjectResult ok = (OkObjectResult)result.Result!;
-        Assert.That(ok.Value, Is.EqualTo(expected));
-        _booksRepo.Verify(x => x.DeleteBook(id), Times.Once);
+    [Test]
+    public async Task DeleteBook_Should_Return_NotFound_When_Delete_Fails()
+    {
+        _delete.Setup(x => x.Handle(It.IsAny<DeleteBookCommand>()))
+            .ReturnsAsync(Result.NotFound("Book not found."));
+
+        ActionResult<GeneralResponse> result = await _controller.DeleteBook(8);
+
+        AssertProblemStatus(result.Result, 404);
+    }
+
+    private static void AssertProblemStatus(IActionResult? actionResult, int expectedStatus)
+    {
+        Assert.That(actionResult, Is.InstanceOf<ObjectResult>());
+
+        ObjectResult objectResult = (ObjectResult)actionResult!;
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(objectResult.StatusCode, Is.EqualTo(expectedStatus));
+            Assert.That(objectResult.Value, Is.InstanceOf<ProblemDetails>());
+        }
     }
 
     private static void AssertRequiresAuthenticatedUser(string actionName)

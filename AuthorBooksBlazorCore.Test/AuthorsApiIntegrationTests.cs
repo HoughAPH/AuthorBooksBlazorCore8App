@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.DTOs;
 using System.Net;
 using System.Net.Http.Json;
@@ -168,15 +169,61 @@ public class AuthorsApiIntegrationTests
     }
 
     [Test]
-    public async Task DeleteAuthor_WhenAdmin_AndAuthorHasBooks_ReturnsBusinessMessage()
+    public async Task DeleteAuthor_WhenAdmin_AndAuthorHasBooks_ReturnsConflictProblem()
     {
         HttpResponseMessage response = await _adminClient.DeleteAsync("/api/Author/DeleteAuthor/1");
-        GeneralResponse expected = new(false, "Author cannot be deleted because the author has books.");
 
-        GeneralResponse generalResponse = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        await AssertProblem(response, HttpStatusCode.Conflict, "Author cannot be deleted because the author has books.");
+    }
 
-        Assert.That(generalResponse, Is.Not.Null);
-        Assert.That(generalResponse!.Message, Is.EqualTo(expected.Message));
+    [Test]
+    public async Task DeleteAuthor_WhenAuthorDoesNotExist_ReturnsNotFoundProblem()
+    {
+        HttpResponseMessage response = await _adminClient.DeleteAsync("/api/Author/DeleteAuthor/999");
+
+        await AssertProblem(response, HttpStatusCode.NotFound, "Author not found.");
+    }
+
+    [Test]
+    public async Task AddAuthor_WithTooLongName_ReturnsBadRequestProblem()
+    {
+        HttpResponseMessage response =
+            await _adminClient.PostAsJsonAsync("/api/Author/AddAuthor", new AuthorDTO { Name = new string('a', 201) });
+
+        await AssertProblem(response, HttpStatusCode.BadRequest, "Author name cannot exceed 200 characters.");
+    }
+
+    [Test]
+    public async Task AddAuthor_WithWhitespaceName_ReturnsValidationProblem()
+    {
+        HttpResponseMessage response =
+            await _adminClient.PostAsJsonAsync("/api/Author/AddAuthor", new AuthorDTO { Name = "   " });
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/problem+json"));
+    }
+
+    [Test]
+    public async Task UpdateAuthor_WhenAuthorDoesNotExist_ReturnsNotFoundProblem()
+    {
+        HttpResponseMessage response = await _adminClient.PutAsJsonAsync(
+            "/api/Author/UpdateAuthor/999", new AuthorDTO { Id = 999, Name = "Nobody" });
+
+        await AssertProblem(response, HttpStatusCode.NotFound, "Author not found.");
+    }
+
+    private static async Task AssertProblem(HttpResponseMessage response, HttpStatusCode status, string detail)
+    {
+        Assert.That(response.StatusCode, Is.EqualTo(status));
+        Assert.That(response.Content.Headers.ContentType?.MediaType, Is.EqualTo("application/problem+json"));
+
+        ProblemDetails? problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.That(problem, Is.Not.Null);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(problem!.Status, Is.EqualTo((int)status));
+            Assert.That(problem.Detail, Is.EqualTo(detail));
+        }
     }
 
     [Test]
