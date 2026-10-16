@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="NotesReNullableStrings.txt" />
-    <File Path="Password.txt" />
   </Folder>
   <Project Path="AuthorBooksBlazorCore.Test/AuthorBooksBlazorCore.Test.csproj" />
   <Project Path="BlazorWebAssemblyApp/BlazorWebAssemblyApp.csproj" />

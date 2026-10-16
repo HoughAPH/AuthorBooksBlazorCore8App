@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.WebAssembly.Http;
+﻿using BlazorWebAssemblyApp.Authentication;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
@@ -8,7 +9,7 @@ using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace BlazorWebAssemblyApp.Services;
 
-public class AccountService(HttpClient httpClient) : IUserAccount
+public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : IUserAccount
 {
     private const string BaseUrl = "api/Account";
     private readonly HttpClient httpClient = httpClient;
@@ -45,14 +46,20 @@ public class AccountService(HttpClient httpClient) : IUserAccount
         {
             return new LoginResponse(false, string.Empty, "Error occurred. Try again later...");
         }
+        LoginResponse result = JsonHelper.DeserializeJsonString<LoginResponse>(apiResponse);
+        if (result.Flag && !string.IsNullOrWhiteSpace(result.Token))
+        {
+            await tokenStorage.SetAsync(result.Token);
+        }
 
-        return JsonHelper.DeserializeJsonString<LoginResponse>(apiResponse);
+        return result;
     }
 
     public async Task<GeneralResponse> LogoutAccount()
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Post, $"{BaseUrl}/logout");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
+        await tokenStorage.ClearAsync();
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {

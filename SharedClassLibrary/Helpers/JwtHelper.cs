@@ -43,8 +43,8 @@ public static class JwtHelper
     public static UserSession GetClaimsFromToken(string jwtToken)
     {
         JwtSecurityTokenHandler handler = new();
-        var token = handler.ReadJwtToken(jwtToken);
-        var claims = token.Claims;
+        JwtSecurityToken token = handler.ReadJwtToken(jwtToken);
+        IEnumerable<Claim> claims = token.Claims;
 
         string Id = claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value!;
         string Name = claims.First(c => c.Type == ClaimTypes.Name).Value!;

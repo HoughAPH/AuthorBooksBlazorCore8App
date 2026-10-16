@@ -14,7 +14,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 string apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
     ?? throw new InvalidOperationException("Missing configuration: ApiSettings:BaseUrl");
 
-builder.Services.AddScoped(sp => new HttpClient
+builder.Services.AddScoped<TokenStorage>();
+builder.Services.AddScoped(sp => new HttpClient(
+    new BearerTokenHandler(sp.GetRequiredService<TokenStorage>()) { InnerHandler = new HttpClientHandler() })
 {
     BaseAddress = new Uri(apiBaseUrl)
 });

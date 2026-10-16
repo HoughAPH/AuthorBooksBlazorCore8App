@@ -23,16 +23,17 @@ public class ApiAuthenticationStateProvider(IUserAccount userAccount) : Authenti
         }
 
         CurrentUserDto? currentUser = await userAccount.GetCurrentUser();
-
         _cachedState = new AuthenticationState(CreatePrincipal(currentUser));
         return _cachedState;
     }
 
-    public Task RefreshUserStateAsync()
+    // FIX: Await the new state generation properly before notifying Blazor
+    public async Task RefreshUserStateAsync()
     {
         ClearCache();
-        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
-        return Task.CompletedTask;
+        Task<AuthenticationState> newStateTask = GetAuthenticationStateAsync();
+        NotifyAuthenticationStateChanged(newStateTask);
+        await newStateTask; // Ensure Blazor registers the update
     }
 
     public void NotifyUserLogout()
@@ -51,8 +52,8 @@ public class ApiAuthenticationStateProvider(IUserAccount userAccount) : Authenti
         List<Claim> claims =
         [
             new(ClaimTypes.Name, currentUser.Email!),
-            new(ClaimTypes.Surname, currentUser.Name ?? string.Empty),
-            new(ClaimTypes.NameIdentifier, currentUser.Id ?? string.Empty)
+        new(ClaimTypes.Surname, currentUser.Name ?? string.Empty),
+        new(ClaimTypes.NameIdentifier, currentUser.Id ?? string.Empty)
         ];
 
         foreach (string role in currentUser.Roles)
@@ -60,14 +61,15 @@ public class ApiAuthenticationStateProvider(IUserAccount userAccount) : Authenti
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        return new ClaimsPrincipal(new ClaimsIdentity(claims, "CookieAuth"));
-    }
+        // FIX: Ensure the claims list AND the authentication type string 
+        // are passed into the exact same constructor signature.
+        ClaimsIdentity identity = new(claims, authenticationType: "JwtAuth");
 
+        return new ClaimsPrincipal(identity);
+    }
 
     public void ClearCache()
     {
         _cachedState = null;
     }
-
-
 }

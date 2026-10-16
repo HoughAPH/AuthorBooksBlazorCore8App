@@ -10,7 +10,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6">
-            <EditForm Enhance Model="User" OnValidSubmit="HandleLogin">
+            <EditForm Model="User" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
                 <div class="card-header fw-bold">Login to your Account</div>
@@ -62,7 +62,7 @@
         if (response.Flag)
         {
             await AuthStateProvider.RefreshUserStateAsync();
-            NavManager.NavigateTo("/");
+            NavManager.NavigateTo("/", forceLoad: false);
             return;
         }
 

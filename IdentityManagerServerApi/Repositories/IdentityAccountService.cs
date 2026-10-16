@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Identity;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Helpers;
+using SharedClassLibrary.Models;
 using System.Security.Claims;
 using static SharedClassLibrary.Models.ServiceResponses;
 
@@ -11,7 +13,8 @@ public class IdentityAccountService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     RoleManager<IdentityRole> roleManager,
-    IHttpContextAccessor httpContextAccessor) : IUserAccount
+    IHttpContextAccessor httpContextAccessor,
+    IConfiguration _configuration) : IUserAccount
 {
     private const string AdminRole = "Admin";
     private const string UserRole = "User";
@@ -66,18 +69,46 @@ public class IdentityAccountService(
             return new LoginResponse(false, string.Empty, "User not found");
         }
 
-        SignInResult signInResult = await signInManager.PasswordSignInAsync(
-            user,
-            loginDTO.Password,
-            isPersistent: false,
-            lockoutOnFailure: false);
+        //SignInResult signInResult = await signInManager.PasswordSignInAsync(
+        //    user,
+        //    loginDTO.Password,
+        //    isPersistent: false,
+        //    lockoutOnFailure: false);
 
-        if (!signInResult.Succeeded)
+        //if (!signInResult.Succeeded)
+        //{
+        //    return new LoginResponse(false, string.Empty, "Email/Password not valid");
+        //}
+
+        bool isPasswordValid = await userManager.CheckPasswordAsync(user, loginDTO.Password);
+        if (!isPasswordValid)
         {
             return new LoginResponse(false, string.Empty, "Email/Password not valid");
         }
 
-        return new LoginResponse(true, string.Empty, "Login completed");
+        // 3. Password is valid! Get the user's roles to add to the token
+        IList<string> roles = await userManager.GetRolesAsync(user);
+
+        string primaryRole = roles.FirstOrDefault() ?? "User"; // Fallback role if empty
+
+        // 4. Create the UserSession object expected by your helper
+        UserSession userSession = new(
+            user.Id,
+            user.UserName ?? user.Email!, // Pass Name/Username
+            user.Email!,
+            primaryRole
+        );
+
+        // 5. Use your helper to generate the real string token
+        string tokenString = JwtHelper.GenerateJwtToken(
+            userSession,
+            _configuration["Jwt:Key"]!,
+            _configuration["Jwt:Issuer"]!,
+            _configuration["Jwt:Audience"]!
+        );
+
+        // 6. Return the string token safely to Blazor
+        return new LoginResponse(true, tokenString, "Login completed");
     }
 
     public async Task<GeneralResponse> LogoutAccount()

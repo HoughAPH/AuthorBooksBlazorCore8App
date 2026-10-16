@@ -1,6 +1,5 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
-using IdentityManagerServerApi.Extensions;
 using IdentityManagerServerApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -71,23 +70,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// Shut down the implicit browser cookie login redirects
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Events = new Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationEvents
-    {
-        OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
-        },
-        OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return Task.CompletedTask;
-        }
-    };
-});
+builder.Services.AddHttpContextAccessor();
 
 // ========================================================
 // JWT BEARER MIDDLEWARE SETUP
@@ -119,7 +102,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IBooks, BooksRepository>();
 builder.Services.AddScoped<IAuthors, AuthorsRepository>();
-//builder.Services.AddScoped(); // Fixed: Restored the complete user service registration
+builder.Services.AddScoped<IUserAccount, IdentityAccountService>();
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
 
 builder.Services.AddCors(options =>
