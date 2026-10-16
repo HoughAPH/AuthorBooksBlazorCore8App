@@ -108,20 +108,9 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            GeneralResponse failure = await ApiResponseReader.ToGeneralResponse(response, "", "Error occurred. Try again later...");
-            return (false, failure.Message);
-        }
-
-        string apiResponse = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(apiResponse))
-        {
-            return (false, "Error occurred. Try again later...");
-        }
-
-        ForgotPasswordResponse result = JsonHelper.DeserializeJsonString<ForgotPasswordResponse>(apiResponse);
-        return (result.Success, result.Token);
+        GeneralResponse result = await ApiResponseReader.ToGeneralResponse(
+            response, "If the account exists, password reset instructions have been sent.", "Error occurred. Try again later...");
+        return (result.Flag, result.Message);
     }
 
     public async Task<(bool, string)> ResetPassword(ResetPasswordDTO user)

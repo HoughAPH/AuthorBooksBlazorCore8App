@@ -6,13 +6,8 @@ namespace IdentityManagerServerApi.Features.Account.Commands;
 
 public record RegisterAccountCommand(string Name, string Email, string Password);
 
-public class RegisterAccountHandler(
-    UserManager<ApplicationUser> userManager,
-    RoleManager<IdentityRole> roleManager) : ICommandHandler<RegisterAccountCommand>
+public class RegisterAccountHandler(UserManager<ApplicationUser> userManager) : ICommandHandler<RegisterAccountCommand>
 {
-    private const string AdminRole = "Admin";
-    private const string UserRole = "User";
-
     public async Task<Result> Handle(RegisterAccountCommand command)
     {
         if (await userManager.FindByEmailAsync(command.Email) is not null)
@@ -29,16 +24,7 @@ public class RegisterAccountHandler(
         if (!created.Succeeded)
             return created;
 
-        // The first account registered becomes the Admin; everyone after that is a User.
-        string role = await roleManager.RoleExistsAsync(AdminRole) ? UserRole : AdminRole;
-        await EnsureRoleExists(role);
-
-        return (await userManager.AddToRoleAsync(newUser, role)).ToResult("Account Created");
-    }
-
-    private async Task EnsureRoleExists(string roleName)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
-            await roleManager.CreateAsync(new IdentityRole { Name = roleName });
+        // Registration only ever creates ordinary users; the Admin is seeded from config (see AdminSeeder).
+        return (await userManager.AddToRoleAsync(newUser, AdminSeeder.UserRole)).ToResult("Account Created");
     }
 }

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
-using SharedClassLibrary.Models;
 using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace IdentityManagerServerApi.Controllers;
@@ -16,7 +15,7 @@ public class AccountController(
     ICommandHandler<RegisterAccountCommand> register,
     ICommandHandler<ResetPasswordCommand> resetPassword,
     IQueryHandler<LoginQuery, Result<string>> login,
-    IQueryHandler<ForgotPasswordQuery, Result<string>> forgotPassword,
+    ICommandHandler<ForgotPasswordCommand> forgotPassword,
     IQueryHandler<GetCurrentUserQuery, CurrentUserDto?> getCurrentUser) : ControllerBase
 {
     [AllowAnonymous]
@@ -65,12 +64,9 @@ public class AccountController(
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordDTO model)
+    public async Task<ActionResult<GeneralResponse>> ForgotPassword([FromBody] ForgotPasswordDTO model)
     {
-        Result<string> result = await forgotPassword.Handle(new ForgotPasswordQuery(model.Email));
-
-        return result.Succeeded
-            ? Ok(new ForgotPasswordResponse { Success = true, Token = result.Value! })
-            : this.ToActionResult(result.Outcome);
+        Result result = await forgotPassword.Handle(new ForgotPasswordCommand(model.Email));
+        return this.ToActionResult(result);
     }
 }

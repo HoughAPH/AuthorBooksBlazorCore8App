@@ -1,5 +1,6 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
+using IdentityManagerServerApi.Features.Account;
 using IdentityManagerServerApi.Features.Account.Commands;
 using IdentityManagerServerApi.Features.Account.Queries;
 using IdentityManagerServerApi.Features.Authors.Commands;
@@ -126,7 +127,11 @@ builder.Services.AddScoped<IQueryHandler<GetBookQuery, BookDTO?>, GetBookHandler
 builder.Services.AddScoped<ICommandHandler<RegisterAccountCommand>, RegisterAccountHandler>();
 builder.Services.AddScoped<ICommandHandler<ResetPasswordCommand>, ResetPasswordHandler>();
 builder.Services.AddScoped<IQueryHandler<LoginQuery, Result<string>>, LoginHandler>();
-builder.Services.AddScoped<IQueryHandler<ForgotPasswordQuery, Result<string>>, ForgotPasswordHandler>();
+builder.Services.AddScoped<ICommandHandler<ForgotPasswordCommand>, ForgotPasswordHandler>();
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddScoped<IResetTokenSender, LoggingResetTokenSender>();
+else
+    builder.Services.AddScoped<IResetTokenSender, NoResetTokenSender>();
 builder.Services.AddScoped<IQueryHandler<GetCurrentUserQuery, CurrentUserDto?>, GetCurrentUserHandler>();
 
 builder.Services.AddScoped<IManageUsers, ManageUsersRepository>();
@@ -149,6 +154,12 @@ builder.Services.AddApiRateLimiting(builder.Configuration);
 WebApplication app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Tests build their own database (see CustomWebApplicationFactory) and replace auth.
+if (!app.Environment.IsEnvironment("IntegrationTesting"))
+{
+    await app.SeedAdminAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
