@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
-using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Controllers;
 
@@ -21,7 +21,7 @@ public class AccountController(
     [AllowAnonymous]
     [HttpPost("register")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> Register([FromBody] UserDTO userDTO)
+    public async Task<ActionResult<Result>> Register([FromBody] UserDTO userDTO)
     {
         Result result = await register.Handle(new RegisterAccountCommand(userDTO.Name, userDTO.Email, userDTO.Password));
         return this.ToActionResult(result);
@@ -30,19 +30,16 @@ public class AccountController(
     [AllowAnonymous]
     [HttpPost("login")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginDTO loginDTO)
+    public async Task<ActionResult<Result<string>>> Login([FromBody] LoginDTO loginDTO)
     {
         Result<string> result = await login.Handle(new LoginQuery(loginDTO.Email, loginDTO.Password));
-
-        return result.Succeeded
-            ? Ok(new LoginResponse(true, result.Value!, result.Outcome.Message))
-            : this.ToActionResult(result.Outcome);
+        return this.ToActionResult(result);
     }
 
     // Tokens are stateless JWTs, so there is nothing to revoke server-side; the client discards its token.
     [Authorize]
     [HttpPost("logout")]
-    public ActionResult<GeneralResponse> Logout() => Ok(new GeneralResponse(true, "Logged out"));
+    public ActionResult<Result> Logout() => Ok(Result.Ok("Logged out"));
 
     [Authorize]
     [HttpGet("me")]
@@ -55,7 +52,7 @@ public class AccountController(
     [AllowAnonymous]
     [HttpPost("reset-password")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> ResetPassword([FromBody] ResetPasswordDTO model)
+    public async Task<ActionResult<Result>> ResetPassword([FromBody] ResetPasswordDTO model)
     {
         Result result = await resetPassword.Handle(new ResetPasswordCommand(model.Email!, model.Token, model.Password));
         return this.ToActionResult(result);
@@ -64,7 +61,7 @@ public class AccountController(
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> ForgotPassword([FromBody] ForgotPasswordDTO model)
+    public async Task<ActionResult<Result>> ForgotPassword([FromBody] ForgotPasswordDTO model)
     {
         Result result = await forgotPassword.Handle(new ForgotPasswordCommand(model.Email));
         return this.ToActionResult(result);

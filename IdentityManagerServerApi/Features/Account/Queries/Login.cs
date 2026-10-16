@@ -19,15 +19,15 @@ public class LoginHandler(UserManager<ApplicationUser> userManager, IConfigurati
     {
         ApplicationUser? user = await userManager.FindByEmailAsync(query.Email);
         if (user is null)
-            return Result<string>.Fail(Result.Unauthorized(InvalidCredentials));
+            return Result<string>.Unauthorized(InvalidCredentials);
 
         if (await userManager.IsLockedOutAsync(user))
-            return Result<string>.Fail(Result.Unauthorized("Account is locked. Try again later."));
+            return Result<string>.Unauthorized("Account is locked. Try again later.");
 
         if (!await userManager.CheckPasswordAsync(user, query.Password))
         {
             await userManager.AccessFailedAsync(user);
-            return Result<string>.Fail(Result.Unauthorized(InvalidCredentials));
+            return Result<string>.Unauthorized(InvalidCredentials);
         }
 
         await userManager.ResetAccessFailedCountAsync(user);

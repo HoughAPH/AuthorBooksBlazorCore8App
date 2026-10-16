@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.DTOs;
 using System.Net;
 using System.Net.Http.Json;
-using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -107,11 +107,11 @@ public class AuthorsApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? result = await response.Content.ReadFromJsonAsync<Result>();
         Assert.That(result, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result!.Flag, Is.True);
+            Assert.That(result!.Succeeded, Is.True);
             Assert.That(result.Message, Is.EqualTo("Author added successfully."));
         }
 
@@ -147,11 +147,11 @@ public class AuthorsApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        GeneralResponse result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? result = await response.Content.ReadFromJsonAsync<Result>();
         Assert.That(result, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result!.Flag, Is.True);
+            Assert.That(result!.Succeeded, Is.True);
             Assert.That(result.Message, Is.EqualTo("Author updated successfully."));
         }
 
@@ -230,9 +230,9 @@ public class AuthorsApiIntegrationTests
     public async Task DeleteAuthor_WhenAdmin_AndAuthorHasNoBooks_DeletesAuthor()
     {
         HttpResponseMessage response = await _adminClient.DeleteAsync("/api/Author/DeleteAuthor/3");
-        GeneralResponse expected = new(true, "Author deleted successfully.");
+        Result expected = Result.Ok("Author deleted successfully.");
 
-        GeneralResponse generalResponse = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? generalResponse = await response.Content.ReadFromJsonAsync<Result>();
 
         Assert.That(generalResponse, Is.Not.Null);
         Assert.That(generalResponse!.Message, Is.EqualTo(expected.Message));

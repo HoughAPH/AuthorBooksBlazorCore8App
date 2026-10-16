@@ -90,8 +90,8 @@ POST /api/Book/AddBook
        author = await authors.GetById(id)         (loads the Author *with its books*)
        author.AddBook(title)                      (the rule check happens here; may throw DomainException)
        await authors.SaveChanges()                (one unit of work)
-  -> Result.Ok / Result.From(domainException)
-  -> ResultExtensions.ToActionResult              (200 GeneralResponse, or 404/409/400 problem+json)
+  -> Result.Ok / domainException.ToResult()
+  -> ResultExtensions.ToActionResult              (200 with the Result as the body, or 404/409/400 problem+json)
 ```
 
 The handler contains no business rules; it is orchestration. The rules are in the domain.

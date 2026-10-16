@@ -2,8 +2,8 @@
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
+using SharedClassLibrary.Models;
 using System.Net;
-using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace BlazorWebAssemblyApp.Services;
 
@@ -36,7 +36,7 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         return JsonHelper.DeserializeJsonString<AuthorDTO>(apiResponse);
     }
 
-    public async Task<GeneralResponse> AddAuthor(AuthorDTO author)
+    public async Task<Result> AddAuthor(AuthorDTO author)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
@@ -44,10 +44,10 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Author added successfully.", "Author could not be added.");
+        return await ResultReader.ToResult(response, "Author added successfully.", "Author could not be added.");
     }
 
-    public async Task<GeneralResponse> UpdateAuthor(int id, AuthorDTO author)
+    public async Task<Result> UpdateAuthor(int id, AuthorDTO author)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
@@ -55,14 +55,14 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Author updated successfully.", "Author could not be updated.");
+        return await ResultReader.ToResult(response, "Author updated successfully.", "Author could not be updated.");
     }
 
-    public async Task<GeneralResponse> DeleteAuthor(int id)
+    public async Task<Result> DeleteAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Author deleted successfully.", "Author could not be deleted.");
+        return await ResultReader.ToResult(response, "Author deleted successfully.", "Author could not be deleted.");
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)

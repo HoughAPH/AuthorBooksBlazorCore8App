@@ -2,8 +2,8 @@
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
+using SharedClassLibrary.Models;
 using System.Net;
-using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
 
 namespace BlazorWebAssemblyApp.Services;
 
@@ -46,7 +46,7 @@ public class BookService(HttpClient httpClient) : IBooks
         return JsonHelper.DeserializeJsonString<BookDTO>(apiResponse);
     }
 
-    public async Task<GeneralResponse> AddBook(BookDTO book)
+    public async Task<Result> AddBook(BookDTO book)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
@@ -54,10 +54,10 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Book added successfully.", "Book could not be added.");
+        return await ResultReader.ToResult(response, "Book added successfully.", "Book could not be added.");
     }
 
-    public async Task<GeneralResponse> UpdateBook(int id, BookDTO book)
+    public async Task<Result> UpdateBook(int id, BookDTO book)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
@@ -65,14 +65,14 @@ public class BookService(HttpClient httpClient) : IBooks
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Book updated successfully.", "Book could not be updated.");
+        return await ResultReader.ToResult(response, "Book updated successfully.", "Book could not be updated.");
     }
 
-    public async Task<GeneralResponse> DeleteBook(int id)
+    public async Task<Result> DeleteBook(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Book deleted successfully.", "Book could not be deleted.");
+        return await ResultReader.ToResult(response, "Book deleted successfully.", "Book could not be deleted.");
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)

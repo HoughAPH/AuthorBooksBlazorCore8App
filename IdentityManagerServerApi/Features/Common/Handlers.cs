@@ -1,3 +1,5 @@
+using SharedClassLibrary.Models;
+
 namespace IdentityManagerServerApi.Features.Common;
 
 public interface ICommandHandler<in TCommand>

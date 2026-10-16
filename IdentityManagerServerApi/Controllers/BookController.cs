@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
-using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Controllers;
 
@@ -52,7 +52,7 @@ public class BookController(
     [Route("AddBook")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> AddBook(BookDTO book)
+    public async Task<ActionResult<Result>> AddBook(BookDTO book)
     {
         Result result = await addBook.Handle(new AddBookCommand(book.Title, book.AuthorId));
         return this.ToActionResult(result);
@@ -62,7 +62,7 @@ public class BookController(
     [HttpPut]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> UpdateBook(int id, BookDTO book)
+    public async Task<ActionResult<Result>> UpdateBook(int id, BookDTO book)
     {
         Result result = await updateBook.Handle(new UpdateBookCommand(id, book.Title, book.AuthorId));
         return this.ToActionResult(result);
@@ -72,7 +72,7 @@ public class BookController(
     [Route("DeleteBook/{id}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> DeleteBook(int id)
+    public async Task<ActionResult<Result>> DeleteBook(int id)
     {
         Result result = await deleteBook.Handle(new DeleteBookCommand(id));
         return this.ToActionResult(result);

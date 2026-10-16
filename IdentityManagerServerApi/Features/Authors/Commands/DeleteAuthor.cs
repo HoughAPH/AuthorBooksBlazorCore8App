@@ -1,6 +1,7 @@
 using IdentityManagerServerApi.Domain;
 using IdentityManagerServerApi.Features.Common;
 using IdentityManagerServerApi.Repositories;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Features.Authors.Commands;
 
@@ -21,7 +22,7 @@ public class DeleteAuthorHandler(IAuthorRepository authors) : ICommandHandler<De
         }
         catch (DomainException ex)
         {
-            return Result.From(ex);
+            return ex.ToResult();
         }
 
         authors.Remove(author);

@@ -1,6 +1,7 @@
 using IdentityManagerServerApi.Domain;
 using IdentityManagerServerApi.Features.Common;
 using IdentityManagerServerApi.Repositories;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Features.Books.Commands;
 

@@ -148,10 +148,10 @@ else
             return;
         }
 
-        ServiceResponses.GeneralResponse response =
+        Result response =
             await BookService.DeleteBook(book.Id);
 
-        if (response.Flag)
+        if (response.Succeeded)
         {
             await NotificationService.ShowSuccessAsync(response.Message, "Deleted!");
         }

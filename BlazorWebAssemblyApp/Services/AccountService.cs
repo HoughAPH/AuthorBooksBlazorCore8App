@@ -1,81 +1,48 @@
-﻿using BlazorWebAssemblyApp.Authentication;
+using BlazorWebAssemblyApp.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
 using System.Net;
-using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace BlazorWebAssemblyApp.Services;
 
 public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : IUserAccount
 {
     private const string BaseUrl = "api/Account";
+    private const string GenericFailure = "Error occurred. Try again later...";
     private readonly HttpClient httpClient = httpClient;
 
-    public async Task<GeneralResponse> CreateAccount(UserDTO userDTO)
+    public async Task<Result> CreateAccount(UserDTO userDTO)
     {
-        using HttpRequestMessage request = CreateRequest(
-            HttpMethod.Post,
-            $"{BaseUrl}/register",
-            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(userDTO)));
-
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
-        return await ApiResponseReader.ToGeneralResponse(response, "Account Created", "Error occurred. Try again later...");
+        using HttpResponseMessage response = await Post("register", userDTO);
+        return await ResultReader.ToResult(response, "Account Created", GenericFailure);
     }
 
-    public async Task<LoginResponse> LoginAccount(LoginDTO loginDTO)
+    public async Task<Result<string>> LoginAccount(LoginDTO loginDTO)
     {
-        using HttpRequestMessage request = CreateRequest(
-            HttpMethod.Post,
-            $"{BaseUrl}/login",
-            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(loginDTO)));
+        using HttpResponseMessage response = await Post("login", loginDTO);
+        Result<string> result = await ResultReader.ToResult<string>(response, "Login completed", GenericFailure);
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
+        if (result.Succeeded && !string.IsNullOrWhiteSpace(result.Value))
         {
-            GeneralResponse failure = await ApiResponseReader.ToGeneralResponse(response, "", "Error occurred. Try again later...");
-            return new LoginResponse(false, string.Empty, failure.Message);
-        }
-
-        string apiResponse = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(apiResponse))
-        {
-            return new LoginResponse(false, string.Empty, "Error occurred. Try again later...");
-        }
-
-        LoginResponse result = JsonHelper.DeserializeJsonString<LoginResponse>(apiResponse);
-        if (result.Flag && !string.IsNullOrWhiteSpace(result.Token))
-        {
-            await tokenStorage.SetAsync(result.Token);
+            await tokenStorage.SetAsync(result.Value);
         }
 
         return result;
     }
 
-    public async Task<GeneralResponse> LogoutAccount()
+    public async Task<Result> LogoutAccount()
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Post, $"{BaseUrl}/logout");
         using HttpResponseMessage response = await httpClient.SendAsync(request);
         await tokenStorage.ClearAsync();
 
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return new GeneralResponse(true, "Already logged out");
-        }
-
-        string apiResponse = await response.Content.ReadAsStringAsync();
-
-        if (string.IsNullOrWhiteSpace(apiResponse))
-        {
-            return response.IsSuccessStatusCode
-                ? new GeneralResponse(true, "Logged out")
-                : new GeneralResponse(false, "Logout failed");
-        }
-
-        return JsonHelper.DeserializeJsonString<GeneralResponse>(apiResponse);
+        // The token is gone either way; a 401 just means the server already considered us signed out.
+        return response.StatusCode == HttpStatusCode.Unauthorized
+            ? Result.Ok("Already logged out")
+            : await ResultReader.ToResult(response, "Logged out", "Logout failed");
     }
 
     public async Task<CurrentUserDto?> GetCurrentUser()
@@ -99,56 +66,28 @@ public class AccountService(HttpClient httpClient, TokenStorage tokenStorage) : 
         return JsonHelper.DeserializeJsonString<CurrentUserDto>(apiResponse);
     }
 
-    public async Task<(bool, string)> ForgotPassword(ForgotPasswordDTO user)
+    public async Task<Result> ForgotPassword(ForgotPasswordDTO user)
+    {
+        using HttpResponseMessage response = await Post("forgot-password", user);
+        return await ResultReader.ToResult(
+            response, "If the account exists, password reset instructions have been sent.", GenericFailure);
+    }
+
+    public async Task<Result> ResetPassword(ResetPasswordDTO user)
+    {
+        using HttpResponseMessage response = await Post("reset-password", user);
+        return await ResultReader.ToResult(response, "Password reset successful", GenericFailure);
+    }
+
+    private async Task<HttpResponseMessage> Post<TBody>(string action, TBody body)
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
-            $"{BaseUrl}/forgot-password",
-            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
+            $"{BaseUrl}/{action}",
+            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(body)));
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-        GeneralResponse result = await ApiResponseReader.ToGeneralResponse(
-            response, "If the account exists, password reset instructions have been sent.", "Error occurred. Try again later...");
-        return (result.Flag, result.Message);
+        return await httpClient.SendAsync(request);
     }
-
-    public async Task<(bool, string)> ResetPassword(ResetPasswordDTO user)
-    {
-        using HttpRequestMessage request = CreateRequest(
-            HttpMethod.Post,
-            $"{BaseUrl}/reset-password",
-            JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(user)));
-
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
-        GeneralResponse result = await ApiResponseReader.ToGeneralResponse(
-            response, "Password reset successful", "Error occurred. Try again later...");
-        return (result.Flag, result.Message);
-    }
-
-    //public async Task<WeatherForecast[]> GetWeatherForecast()
-    //{
-    //    CurrentUserDto? currentUser = await GetCurrentUser();
-    //    if (currentUser is null || !currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(currentUser.Role))
-    //    {
-    //        return [];
-    //    }
-
-    //    string route = currentUser.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase)
-    //        ? "api/WeatherForecast/admin"
-    //        : "api/WeatherForecast/user";
-
-    //    using HttpRequestMessage request = CreateRequest(HttpMethod.Get, route);
-    //    using HttpResponseMessage response = await httpClient.SendAsync(request);
-
-    //    if (!response.IsSuccessStatusCode)
-    //    {
-    //        return [];
-    //    }
-
-    //    string result = await response.Content.ReadAsStringAsync();
-    //    return [.. JsonHelper.DeserializeJsonStringList<WeatherForecast>(result)];
-    //}
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
     {

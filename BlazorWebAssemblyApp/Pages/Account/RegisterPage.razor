@@ -101,17 +101,14 @@
 
     private async Task HandleRegistration()
     {
-        var (flag, message) = await AccountService.CreateAccount(User);
-        if (flag)
+        Result result = await AccountService.CreateAccount(User);
+
+        await js.InvokeVoidAsync("alert", result.Message);
+
+        if (result.Succeeded)
         {
-            await js.InvokeVoidAsync("alert", message);
             User = new();
-            return;
         }
-
-        await js.InvokeVoidAsync("alert", message);
-        return;
-
     }
 
     void ShowPasswordEvent() => ShowPassword = !ShowPassword;

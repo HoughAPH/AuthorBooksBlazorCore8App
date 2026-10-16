@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SharedClassLibrary.DTOs;
 using System.Reflection;
-using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -143,12 +143,12 @@ public class BookControllerTests
         _add.Setup(x => x.Handle(new AddBookCommand("New Book", 5)))
             .ReturnsAsync(Result.Ok("Book added successfully."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.AddBook(new BookDTO { Title = "New Book", AuthorId = 5 });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Book added successfully.")));
+            Is.EqualTo(Result.Ok("Book added successfully.")));
     }
 
     [Test]
@@ -157,7 +157,7 @@ public class BookControllerTests
         _add.Setup(x => x.Handle(It.IsAny<AddBookCommand>()))
             .ReturnsAsync(Result.NotFound("Author not found."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.AddBook(new BookDTO { Title = "New Book", AuthorId = 5 });
 
         AssertProblemStatus(result.Result, 404);
@@ -169,12 +169,12 @@ public class BookControllerTests
         _update.Setup(x => x.Handle(new UpdateBookCommand(7, "Updated Book", 5)))
             .ReturnsAsync(Result.Ok("Book updated successfully."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.UpdateBook(7, new BookDTO { Id = 7, Title = "Updated Book", AuthorId = 5 });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Book updated successfully.")));
+            Is.EqualTo(Result.Ok("Book updated successfully.")));
     }
 
     [Test]
@@ -183,7 +183,7 @@ public class BookControllerTests
         _update.Setup(x => x.Handle(It.IsAny<UpdateBookCommand>()))
             .ReturnsAsync(Result.NotFound("Book not found."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.UpdateBook(7, new BookDTO { Title = "x", AuthorId = 5 });
 
         AssertProblemStatus(result.Result, 404);
@@ -195,11 +195,11 @@ public class BookControllerTests
         _delete.Setup(x => x.Handle(new DeleteBookCommand(8)))
             .ReturnsAsync(Result.Ok("Book deleted successfully."));
 
-        ActionResult<GeneralResponse> result = await _controller.DeleteBook(8);
+        ActionResult<Result> result = await _controller.DeleteBook(8);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Book deleted successfully.")));
+            Is.EqualTo(Result.Ok("Book deleted successfully.")));
     }
 
     [Test]
@@ -208,7 +208,7 @@ public class BookControllerTests
         _delete.Setup(x => x.Handle(It.IsAny<DeleteBookCommand>()))
             .ReturnsAsync(Result.NotFound("Book not found."));
 
-        ActionResult<GeneralResponse> result = await _controller.DeleteBook(8);
+        ActionResult<Result> result = await _controller.DeleteBook(8);
 
         AssertProblemStatus(result.Result, 404);
     }

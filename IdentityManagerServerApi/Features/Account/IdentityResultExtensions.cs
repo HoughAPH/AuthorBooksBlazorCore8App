@@ -1,5 +1,6 @@
 using IdentityManagerServerApi.Features.Common;
 using Microsoft.AspNetCore.Identity;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Features.Account;
 

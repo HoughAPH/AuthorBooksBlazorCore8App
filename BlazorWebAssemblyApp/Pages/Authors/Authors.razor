@@ -104,7 +104,7 @@ else
 
         var response = await AuthorsService.DeleteAuthor(id);
 
-        if (response.Flag)
+        if (response.Succeeded)
         {
             await LoadAuthorsAsync();
             await NotificationService.ShowSuccessAsync(response.Message);

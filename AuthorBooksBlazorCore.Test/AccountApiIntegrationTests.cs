@@ -7,7 +7,6 @@ using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
 using System.Net;
 using System.Net.Http.Json;
-using static SharedClassLibrary.Models.ServiceResponses;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -71,8 +70,8 @@ public class AccountApiIntegrationTests
         HttpResponseMessage response = await Register();
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        GeneralResponse? body = await response.Content.ReadFromJsonAsync<GeneralResponse>();
-        Assert.That(body, Is.EqualTo(new GeneralResponse(true, "Account Created")));
+        Result? body = await response.Content.ReadFromJsonAsync<Result>();
+        Assert.That(body, Is.EqualTo(Result.Ok("Account Created")));
 
         using IServiceScope scope = _factory.Services.CreateScope();
         UserManager<ApplicationUser> users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -132,11 +131,11 @@ public class AccountApiIntegrationTests
         HttpResponseMessage response = await Login();
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        LoginResponse? body = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        Assert.That(body!.Flag, Is.True);
-        Assert.That(body.Token, Is.Not.Empty);
+        Result<string>? body = await response.Content.ReadFromJsonAsync<Result<string>>();
+        Assert.That(body!.Succeeded, Is.True);
+        Assert.That(body.Value, Is.Not.Empty);
 
-        UserSession session = JwtHelper.GetClaimsFromToken(body.Token);
+        UserSession session = JwtHelper.GetClaimsFromToken(body.Value);
         using (Assert.EnterMultipleScope())
         {
             Assert.That(session.Email, Is.EqualTo(Email));
@@ -254,7 +253,7 @@ public class AccountApiIntegrationTests
         HttpResponseMessage response = await authed.PostAsync("/api/Account/logout", null);
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That((await response.Content.ReadFromJsonAsync<GeneralResponse>())!.Flag, Is.True);
+        Assert.That((await response.Content.ReadFromJsonAsync<Result>())!.Succeeded, Is.True);
     }
 
     // ---- Forgot / reset password ----

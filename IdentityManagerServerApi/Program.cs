@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 using System.Text;
 
 

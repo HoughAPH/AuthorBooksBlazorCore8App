@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <!-- Compiled in directly: referencing BlazorWebAssemblyApp would clash with the API's top-level Program type. -->
-    <Compile Include="..\BlazorWebAssemblyApp\Services\ApiResponseReader.cs" Link="Linked\ApiResponseReader.cs" />
+    <Compile Include="..\BlazorWebAssemblyApp\Services\ResultReader.cs" Link="Linked\ResultReader.cs" />
   </ItemGroup>
 
   <ItemGroup>

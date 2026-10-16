@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SharedClassLibrary.DTOs;
 using System.Reflection;
-using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -110,11 +110,11 @@ public class AuthorControllerTests
         _create.Setup(x => x.Handle(new CreateAuthorCommand("New Author")))
             .ReturnsAsync(Result.Ok("Author added successfully."));
 
-        ActionResult<GeneralResponse> result = await _controller.AddAuthor(new AuthorDTO { Name = "New Author" });
+        ActionResult<Result> result = await _controller.AddAuthor(new AuthorDTO { Name = "New Author" });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Author added successfully.")));
+            Is.EqualTo(Result.Ok("Author added successfully.")));
     }
 
     [Test]
@@ -123,7 +123,7 @@ public class AuthorControllerTests
         _create.Setup(x => x.Handle(It.IsAny<CreateAuthorCommand>()))
             .ReturnsAsync(Result.Invalid("Author name is required."));
 
-        ActionResult<GeneralResponse> result = await _controller.AddAuthor(new AuthorDTO { Name = " " });
+        ActionResult<Result> result = await _controller.AddAuthor(new AuthorDTO { Name = " " });
 
         AssertProblemStatus(result.Result, 400);
     }
@@ -134,12 +134,12 @@ public class AuthorControllerTests
         _rename.Setup(x => x.Handle(new RenameAuthorCommand(3, "Updated Author")))
             .ReturnsAsync(Result.Ok("Author updated successfully."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.UpdateAuthor(3, new AuthorDTO { Id = 3, Name = "Updated Author" });
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Author updated successfully.")));
+            Is.EqualTo(Result.Ok("Author updated successfully.")));
     }
 
     [Test]
@@ -148,7 +148,7 @@ public class AuthorControllerTests
         _rename.Setup(x => x.Handle(It.IsAny<RenameAuthorCommand>()))
             .ReturnsAsync(Result.NotFound("Author not found."));
 
-        ActionResult<GeneralResponse> result =
+        ActionResult<Result> result =
             await _controller.UpdateAuthor(9, new AuthorDTO { Name = "Whoever" });
 
         AssertProblemStatus(result.Result, 404);
@@ -160,11 +160,11 @@ public class AuthorControllerTests
         _delete.Setup(x => x.Handle(new DeleteAuthorCommand(4)))
             .ReturnsAsync(Result.Ok("Author deleted successfully."));
 
-        ActionResult<GeneralResponse> result = await _controller.DeleteAuthor(4);
+        ActionResult<Result> result = await _controller.DeleteAuthor(4);
 
         Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
         Assert.That(((OkObjectResult)result.Result!).Value,
-            Is.EqualTo(new GeneralResponse(true, "Author deleted successfully.")));
+            Is.EqualTo(Result.Ok("Author deleted successfully.")));
     }
 
     [Test]
@@ -173,7 +173,7 @@ public class AuthorControllerTests
         _delete.Setup(x => x.Handle(It.IsAny<DeleteAuthorCommand>()))
             .ReturnsAsync(Result.Conflict("Author cannot be deleted because the author has books."));
 
-        ActionResult<GeneralResponse> result = await _controller.DeleteAuthor(1);
+        ActionResult<Result> result = await _controller.DeleteAuthor(1);
 
         AssertProblemStatus(result.Result, 409);
     }

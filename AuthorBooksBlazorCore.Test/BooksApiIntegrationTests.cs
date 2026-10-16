@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using static SharedClassLibrary.Models.ServiceResponses;
+using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -130,11 +130,11 @@ public class BooksApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        GeneralResponse? result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? result = await response.Content.ReadFromJsonAsync<Result>();
         Assert.That(result, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result!.Flag, Is.True);
+            Assert.That(result!.Succeeded, Is.True);
             Assert.That(result.Message, Is.EqualTo("Book added successfully."));
         }
 
@@ -172,11 +172,11 @@ public class BooksApiIntegrationTests
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        GeneralResponse? result = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? result = await response.Content.ReadFromJsonAsync<Result>();
         Assert.That(result, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result!.Flag, Is.True);
+            Assert.That(result!.Succeeded, Is.True);
             Assert.That(result.Message, Is.EqualTo("Book updated successfully."));
         }
 
@@ -272,9 +272,9 @@ public class BooksApiIntegrationTests
     public async Task DeleteBook_WhenAdmin_ReturnsOk_AndDeletesBook()
     {
         HttpResponseMessage response = await _adminClient.DeleteAsync("/api/Book/DeleteBook/1");
-        GeneralResponse expected = new(true, "Book deleted successfully.");
+        Result expected = Result.Ok("Book deleted successfully.");
 
-        GeneralResponse generalResponse = await response.Content.ReadFromJsonAsync<GeneralResponse>();
+        Result? generalResponse = await response.Content.ReadFromJsonAsync<Result>();
         Assert.That(generalResponse, Is.Not.Null);
         Assert.That(generalResponse!.Message, Is.EqualTo(expected.Message));
 

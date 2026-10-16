@@ -59,7 +59,7 @@
     {
         var response = await AccountService.LoginAccount(User);
 
-        if (response.Flag)
+        if (response.Succeeded)
         {
             await AuthStateProvider.RefreshUserStateAsync();
             NavManager.NavigateTo("/", forceLoad: false);

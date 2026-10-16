@@ -116,11 +116,11 @@ else
             return;
         }
 
-        SharedClassLibrary.Models.ServiceResponses.GeneralResponse response = IdEdit != 0
+        Result response = IdEdit != 0
             ? await BookService.UpdateBook(IdEdit, book)
             : await BookService.AddBook(book);
 
-        if (response.Flag)
+        if (response.Succeeded)
         {
             await NotificationService.ShowSuccessAsync(response.Message);
             NavigateBackToList();

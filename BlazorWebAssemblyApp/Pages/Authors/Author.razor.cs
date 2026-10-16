@@ -39,7 +39,7 @@ public partial class Author
             ? await AuthorsService.UpdateAuthor(author.Id, author)
             : await AuthorsService.AddAuthor(author);
 
-        if (!response.Flag)
+        if (!response.Succeeded)
         {
             await NotificationService.ShowWarningAsync(
                 response.Message,

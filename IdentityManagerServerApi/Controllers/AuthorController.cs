@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SharedClassLibrary.DTOs;
-using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralResponse;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Controllers;
 
@@ -43,7 +43,7 @@ public class AuthorController(
     [Route("AddAuthor")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> AddAuthor(AuthorDTO author)
+    public async Task<ActionResult<Result>> AddAuthor(AuthorDTO author)
     {
         Result result = await createAuthor.Handle(new CreateAuthorCommand(author.Name));
         return this.ToActionResult(result);
@@ -53,7 +53,7 @@ public class AuthorController(
     [Route("UpdateAuthor/{id}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> UpdateAuthor(int id, AuthorDTO author)
+    public async Task<ActionResult<Result>> UpdateAuthor(int id, AuthorDTO author)
     {
         Result result = await renameAuthor.Handle(new RenameAuthorCommand(id, author.Name));
         return this.ToActionResult(result);
@@ -63,7 +63,7 @@ public class AuthorController(
     [Route("DeleteAuthor/{id}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting(RateLimitPolicies.Writes)]
-    public async Task<ActionResult<GeneralResponse>> DeleteAuthor(int id)
+    public async Task<ActionResult<Result>> DeleteAuthor(int id)
     {
         Result result = await deleteAuthor.Handle(new DeleteAuthorCommand(id));
         return this.ToActionResult(result);

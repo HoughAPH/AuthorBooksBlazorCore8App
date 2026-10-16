@@ -1,6 +1,7 @@
 using IdentityManagerServerApi.Domain;
 using IdentityManagerServerApi.Features.Common;
 using IdentityManagerServerApi.Repositories;
+using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Features.Books.Commands;
 
@@ -33,7 +34,7 @@ public class UpdateBookHandler(IAuthorRepository authors) : ICommandHandler<Upda
         }
         catch (DomainException ex)
         {
-            return Result.From(ex);
+            return ex.ToResult();
         }
 
         return await authors.SaveChanges() > 0
