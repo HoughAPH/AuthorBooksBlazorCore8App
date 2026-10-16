@@ -13,9 +13,11 @@ public static class AdminSeeder
     /// configured, that an account with that email exists in the Admin role. Idempotent; an existing account's
     /// password is left alone.
     /// </summary>
-    public static async Task SeedAdminAsync(this WebApplication app)
+    public static Task SeedAdminAsync(this WebApplication app) => SeedAdminAsync(app.Services);
+
+    public static async Task SeedAdminAsync(IServiceProvider rootServices)
     {
-        using IServiceScope scope = app.Services.CreateScope();
+        using IServiceScope scope = rootServices.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
 
         RoleManager<IdentityRole> roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();

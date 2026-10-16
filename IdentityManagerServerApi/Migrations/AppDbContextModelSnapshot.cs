@@ -90,7 +90,7 @@ namespace IdentityManagerServerApi.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("IdentityManagerServerApi.Domain.Author", b =>
+            modelBuilder.Entity("IdentityManagerServerApi.Entities.Author", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -105,10 +105,10 @@ namespace IdentityManagerServerApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Authors");
+                    b.ToTable("Authors", (string)null);
                 });
 
-            modelBuilder.Entity("IdentityManagerServerApi.Domain.Book", b =>
+            modelBuilder.Entity("IdentityManagerServerApi.Entities.Book", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -131,7 +131,7 @@ namespace IdentityManagerServerApi.Migrations
                     b.ToTable("Books", (string)null);
                 });
 
-            modelBuilder.Entity("IdentityManagerServerApi.Data.Logs", b =>
+            modelBuilder.Entity("IdentityManagerServerApi.Entities.Logs", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -165,7 +165,7 @@ namespace IdentityManagerServerApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Logs");
+                    b.ToTable("Logs", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -301,9 +301,9 @@ namespace IdentityManagerServerApi.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("IdentityManagerServerApi.Domain.Book", b =>
+            modelBuilder.Entity("IdentityManagerServerApi.Entities.Book", b =>
                 {
-                    b.HasOne("IdentityManagerServerApi.Domain.Author", "Author")
+                    b.HasOne("IdentityManagerServerApi.Entities.Author", "Author")
                         .WithMany("Books")
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -363,7 +363,7 @@ namespace IdentityManagerServerApi.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("IdentityManagerServerApi.Domain.Author", b =>
+            modelBuilder.Entity("IdentityManagerServerApi.Entities.Author", b =>
                 {
                     b.Navigation("Books");
                 });

@@ -1,7 +1,9 @@
 ﻿using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Domain;
+using IdentityManagerServerApi.Features.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +14,40 @@ using System.Net.Http.Headers;
 
 namespace AuthorBooksBlazorCore.Test;
 
+public sealed class CapturingResetTokenSender : IResetTokenSender
+{
+    public List<(string Email, string Token)> Sent { get; } = [];
+
+    public Task Send(string email, string token)
+    {
+        Sent.Add((email, token));
+        return Task.CompletedTask;
+    }
+}
+
 public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram> where TProgram : class
 {
     private DbConnection? _connection;
 
+    /// <summary>Tokens "sent" by the forgot-password flow, so tests can complete a reset.</summary>
+    public CapturingResetTokenSender ResetTokens { get; } = new();
+
+    /// <summary>Extra configuration (for example <c>Seed:AdminEmail</c>); set before the first client is created.</summary>
+    public Dictionary<string, string> Settings { get; } = [];
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTesting");
+
+        foreach ((string key, string value) in Settings)
+            builder.UseSetting(key, value);
+
+        // Program.cs requires Jwt:Key at startup, but user secrets only load in Development. UseSetting (unlike
+        // ConfigureAppConfiguration) is visible to the config reads Program.cs does before the host is built.
+        // Tokens are never validated here: TestAuthHandler replaces JWT bearer authentication.
+        builder.UseSetting("Jwt:Key", "integration-tests-only-signing-key-0123456789");
+        builder.UseSetting("Jwt:Issuer", "IdentityManagerServerApi");
+        builder.UseSetting("Jwt:Audience", "BlazorWasmClient");
 
         builder.ConfigureServices(services =>
         {
@@ -37,6 +66,9 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
                 DbConnection connection = serviceProvider.GetRequiredService<DbConnection>();
                 options.UseSqlite(connection);
             });
+
+            services.RemoveAll<IResetTokenSender>();
+            services.AddSingleton<IResetTokenSender>(ResetTokens);
 
             services.AddAuthentication(options =>
             {
@@ -93,6 +125,14 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         if (!db.Authors.Any())
         {
             SeedDatabase(db);
+        }
+
+        // Registration assigns the "User" role, which must already exist (the admin seeder is skipped in tests).
+        RoleManager<IdentityRole> roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        foreach (string role in new[] { AdminSeeder.AdminRole, AdminSeeder.UserRole })
+        {
+            if (!roles.RoleExistsAsync(role).GetAwaiter().GetResult())
+                roles.CreateAsync(new IdentityRole { Name = role }).GetAwaiter().GetResult();
         }
     }
 
