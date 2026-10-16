@@ -1,5 +1,6 @@
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Entities;
+using IdentityManagerServerApi.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
@@ -7,67 +8,44 @@ using GeneralResponse = SharedClassLibrary.Models.ServiceResponses.GeneralRespon
 
 namespace IdentityManagerServerApi.Repositories;
 
+/// <summary>
+/// Books are children of the <see cref="Author"/> aggregate: reads are projections,
+/// writes always load the owning Author and go through its methods.
+/// </summary>
 public class BooksRepository(AppDbContext dbContext) : IBooks
 {
     private readonly AppDbContext _dbContext = dbContext;
 
     public async Task<IEnumerable<BookDTO>> GetBooks()
     {
-        List<BookDTO> books = await _dbContext.Books
-            .Include(b => b.Author)
-            .Select(b => new BookDTO
-            {
-                Id = b.Id,
-                Title = b.Title,
-                AuthorName = b.Author.Name,
-                AuthorId = b.AuthorId
-            })
-            .ToListAsync();
-
-        return books;
+        return await BookQuery().ToListAsync();
     }
 
     public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
     {
-        List<BookDTO> books = await _dbContext.Books
-            .Where(b => b.AuthorId == id)
-            .Include(b => b.Author)
-            .Select(b => new BookDTO
-            {
-                Id = b.Id,
-                Title = b.Title,
-                AuthorName = b.Author.Name,
-                AuthorId = b.AuthorId
-            })
-            .ToListAsync();
-
-        return books;
+        return await BookQuery().Where(b => b.AuthorId == id).ToListAsync();
     }
 
     public async Task<BookDTO?> GetBook(int id)
     {
-        BookDTO? book = await _dbContext.Books
-            .Where(b => b.Id == id)
-            .Include(b => b.Author)
-            .Select(b => new BookDTO
-            {
-                Id = b.Id,
-                Title = b.Title,
-                AuthorName = b.Author.Name,
-                AuthorId = b.AuthorId
-            })
-            .FirstOrDefaultAsync();
-
-        return book;
+        return await BookQuery().Where(b => b.Id == id).FirstOrDefaultAsync();
     }
 
     public async Task<GeneralResponse> AddBook(BookDTO book)
     {
-        _dbContext.Books.Add(new Book
+        Author? author = await LoadAuthor(book.AuthorId);
+
+        if (author is null)
+            return new(false, "Author not found.");
+
+        try
         {
-            Title = book.Title,
-            AuthorId = book.AuthorId
-        });
+            author.AddBook(book.Title);
+        }
+        catch (DomainException ex)
+        {
+            return new(false, ex.Message);
+        }
 
         int rowsAffected = await _dbContext.SaveChangesAsync();
 
@@ -78,13 +56,31 @@ public class BooksRepository(AppDbContext dbContext) : IBooks
 
     public async Task<GeneralResponse> UpdateBook(int id, BookDTO book)
     {
-        Book? bookToUpdate = await _dbContext.Books.FindAsync(id);
+        Author? owner = await LoadOwner(id);
 
-        if (bookToUpdate is null)
+        if (owner is null)
             return new(false, "Book not found.");
 
-        bookToUpdate.Title = book.Title;
-        bookToUpdate.AuthorId = book.AuthorId;
+        try
+        {
+            if (owner.Id == book.AuthorId)
+            {
+                owner.UpdateBook(id, book.Title);
+            }
+            else
+            {
+                Author? target = await LoadAuthor(book.AuthorId);
+
+                if (target is null)
+                    return new(false, "Author not found.");
+
+                owner.TransferBook(id, target, book.Title);
+            }
+        }
+        catch (DomainException ex)
+        {
+            return new(false, ex.Message);
+        }
 
         int rowsAffected = await _dbContext.SaveChangesAsync();
 
@@ -95,12 +91,12 @@ public class BooksRepository(AppDbContext dbContext) : IBooks
 
     public async Task<GeneralResponse> DeleteBook(int id)
     {
-        Book? book = await _dbContext.Books.FindAsync(id);
+        Author? owner = await LoadOwner(id);
 
-        if (book is null)
+        if (owner is null)
             return new(false, "Book not found.");
 
-        _dbContext.Books.Remove(book);
+        owner.RemoveBook(id);
 
         int rowsAffected = await _dbContext.SaveChangesAsync();
 
@@ -109,4 +105,22 @@ public class BooksRepository(AppDbContext dbContext) : IBooks
 
         return new(true, "Book deleted successfully.");
     }
+
+    private IQueryable<BookDTO> BookQuery() =>
+        _dbContext.Authors
+            .AsNoTracking()
+            .SelectMany(a => a.Books, (a, b) => new BookDTO
+            {
+                Id = b.Id,
+                Title = b.Title,
+                AuthorName = a.Name,
+                AuthorId = a.Id
+            });
+
+    private Task<Author?> LoadAuthor(int id) =>
+        _dbContext.Authors.Include(a => a.Books).FirstOrDefaultAsync(a => a.Id == id);
+
+    private Task<Author?> LoadOwner(int bookId) =>
+        _dbContext.Authors.Include(a => a.Books)
+            .FirstOrDefaultAsync(a => a.Books.Any(b => b.Id == bookId));
 }

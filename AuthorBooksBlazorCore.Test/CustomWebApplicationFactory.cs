@@ -86,7 +86,7 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
 
-        if (!db.Authors.Any() && !db.Books.Any())
+        if (!db.Authors.Any())
         {
             SeedDatabase(db);
         }
@@ -94,15 +94,16 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
     private static void SeedDatabase(AppDbContext db)
     {
-        Author author1 = new() { Id = 1, Name = "Eric Evans" };
-        Author author2 = new() { Id = 2, Name = "Robert Martin" };
-        Author author3 = new() { Id = 3, Name = "Removable Author" };
+        // Ids are database-generated (1, 2, 3 for authors; 1, 2 for books on a fresh database).
+        Author author1 = Author.Create("Eric Evans");
+        author1.AddBook("Domain Driven Design");
+
+        Author author2 = Author.Create("Robert Martin");
+        author2.AddBook("Clean Code");
+
+        Author author3 = Author.Create("Removable Author");
 
         db.Authors.AddRange(author1, author2, author3);
-
-        db.Books.AddRange(
-            new Book { Id = 1, Title = "Domain Driven Design", AuthorId = 1 },
-            new Book { Id = 2, Title = "Clean Code", AuthorId = 2 });
 
         db.SaveChanges();
     }
