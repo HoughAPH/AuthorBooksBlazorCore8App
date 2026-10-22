@@ -50,7 +50,8 @@ public static class AdminSeeder
                 UserName = email
             };
             Throw(await userManager.CreateAsync(admin, password), "create the seeded admin");
-            logger.LogInformation("Seeded admin account {Email}.", email);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Seeded admin account {Email}.", email);
         }
 
         if (!await userManager.IsInRoleAsync(admin, AdminRole))

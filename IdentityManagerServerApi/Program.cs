@@ -50,13 +50,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-string defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
-
 builder.Services.AddHealthChecks();
 
+// Tests build their own SQLite database (see CustomWebApplicationFactory), so no connection string is needed there.
 if (!builder.Environment.IsEnvironment("IntegrationTesting"))
 {
+    string defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "Connection string 'DefaultConnection' is not configured. Development uses SQL Server LocalDB from "
+            + "appsettings.Development.json; elsewhere supply ConnectionStrings:DefaultConnection.");
+
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
         options.UseSqlServer(defaultConnection);
@@ -85,8 +88,11 @@ builder.Services.AddHttpContextAccessor();
 // ========================================================
 // JWT BEARER MIDDLEWARE SETUP
 // ========================================================
-string jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("JWT Key configuration is missing.");
+string jwtKey = builder.Configuration["Jwt:Key"] is { Length: >= 32 } configuredKey
+    ? configuredKey
+    : throw new InvalidOperationException(
+        "Jwt:Key is missing or shorter than 32 characters. Run scripts/setup.ps1 to generate one into user "
+        + "secrets, or set it through the environment (Jwt__Key).");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -159,6 +165,14 @@ app.UseExceptionHandler();
 // Tests build their own database (see CustomWebApplicationFactory) and replace auth.
 if (!app.Environment.IsEnvironment("IntegrationTesting"))
 {
+    // Development creates/updates the schema on startup so a fresh clone runs without extra steps. Other
+    // environments migrate explicitly (dotnet ef database update, or a generated script).
+    if (app.Environment.IsDevelopment())
+    {
+        using IServiceScope scope = app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+    }
+
     await app.SeedAdminAsync();
 }
 

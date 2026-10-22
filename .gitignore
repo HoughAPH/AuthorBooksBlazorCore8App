@@ -366,3 +366,6 @@ FodyWeavers.xsd
 /Password.txt
 /Password.txt
 /Password.txt
+
+# Test output
+TestResults/
