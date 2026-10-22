@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SharedClassLibrary.Helpers;
+
 public static class JsonHelper
 {
     public static JsonSerializerOptions JsonOptions()

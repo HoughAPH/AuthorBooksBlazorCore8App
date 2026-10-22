@@ -18,6 +18,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<Applicat
             author.HasKey(a => a.Id);
             author.Property(a => a.Name).IsRequired().HasMaxLength(Author.NameMaxLength);
 
+            // Assigned by the aggregate on every change (database-agnostic, so it works on SQL Server and SQLite alike).
+            author.Property(a => a.Version).IsConcurrencyToken().ValueGeneratedNever();
+
             author.HasMany(a => a.Books)
                   .WithOne(b => b.Author)
                   .HasForeignKey(b => b.AuthorId)

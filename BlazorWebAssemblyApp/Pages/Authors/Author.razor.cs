@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 
 namespace BlazorWebAssemblyApp.Pages.Authors;
 
@@ -35,7 +36,7 @@ public partial class Author
         if (author is null)
             return;
 
-        var response = IdEdit != 0
+        Result response = IdEdit != 0
             ? await AuthorsService.UpdateAuthor(author.Id, author)
             : await AuthorsService.AddAuthor(author);
 

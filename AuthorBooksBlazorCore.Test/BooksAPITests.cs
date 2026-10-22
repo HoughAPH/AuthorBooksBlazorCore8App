@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SharedClassLibrary.DTOs;
-using System.Reflection;
 using SharedClassLibrary.Models;
+using System.Reflection;
 
 namespace AuthorBooksBlazorCore.Test;
 
@@ -17,6 +17,7 @@ public class BookControllerTests
     private Mock<IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>>> _getBooks = null!;
     private Mock<IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>>> _getAuthorBooks = null!;
     private Mock<IQueryHandler<GetBookQuery, BookDTO?>> _getBook = null!;
+    private Mock<IQueryHandler<GetBooksPageQuery, PagedResult<BookDTO>>> _getBooksPage = null!;
     private Mock<ICommandHandler<AddBookCommand>> _add = null!;
     private Mock<ICommandHandler<UpdateBookCommand>> _update = null!;
     private Mock<ICommandHandler<DeleteBookCommand>> _delete = null!;
@@ -28,12 +29,13 @@ public class BookControllerTests
         _getBooks = new();
         _getAuthorBooks = new();
         _getBook = new();
+        _getBooksPage = new();
         _add = new();
         _update = new();
         _delete = new();
 
         _controller = new BookController(
-            _getBooks.Object, _getAuthorBooks.Object, _getBook.Object,
+            _getBooks.Object, _getAuthorBooks.Object, _getBook.Object, _getBooksPage.Object,
             _add.Object, _update.Object, _delete.Object);
     }
 

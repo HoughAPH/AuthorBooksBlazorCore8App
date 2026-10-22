@@ -10,8 +10,8 @@ using IdentityManagerServerApi.Features.Books.Queries;
 using IdentityManagerServerApi.Features.Common;
 using IdentityManagerServerApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -38,7 +38,7 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
         return;
     }
 
-    loggerConfiguration.ReadFrom.Configuration(context.Configuration);
+    loggerConfiguration.ReadFrom.Configuration(context.Configuration).WriteTo.Console();
 });
 
 string[] allowedOrigins = builder.Configuration
@@ -50,7 +50,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHealthChecks();
+// "/health" also verifies the database; "/health/live" only proves the process is up.
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
 // Tests build their own SQLite database (see CustomWebApplicationFactory), so no connection string is needed there.
 if (!builder.Environment.IsEnvironment("IntegrationTesting"))
@@ -123,6 +124,7 @@ builder.Services.AddScoped<ICommandHandler<RenameAuthorCommand>, RenameAuthorHan
 builder.Services.AddScoped<ICommandHandler<DeleteAuthorCommand>, DeleteAuthorHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAuthorsQuery, List<AuthorDTO>>, GetAuthorsHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAuthorQuery, AuthorDTO?>, GetAuthorHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAuthorsPageQuery, PagedResult<AuthorDTO>>, GetAuthorsPageHandler>();
 
 builder.Services.AddScoped<ICommandHandler<AddBookCommand>, AddBookHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateBookCommand>, UpdateBookHandler>();
@@ -130,6 +132,7 @@ builder.Services.AddScoped<ICommandHandler<DeleteBookCommand>, DeleteBookHandler
 builder.Services.AddScoped<IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>>, GetBooksHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>>, GetAuthorBooksHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBookQuery, BookDTO?>, GetBookHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBooksPageQuery, PagedResult<BookDTO>>, GetBooksPageHandler>();
 
 builder.Services.AddScoped<ICommandHandler<RegisterAccountCommand>, RegisterAccountHandler>();
 builder.Services.AddScoped<ICommandHandler<ResetPasswordCommand>, ResetPasswordHandler>();
@@ -165,9 +168,10 @@ app.UseExceptionHandler();
 // Tests build their own database (see CustomWebApplicationFactory) and replace auth.
 if (!app.Environment.IsEnvironment("IntegrationTesting"))
 {
-    // Development creates/updates the schema on startup so a fresh clone runs without extra steps. Other
-    // environments migrate explicitly (dotnet ef database update, or a generated script).
-    if (app.Environment.IsDevelopment())
+    // Development, or Database:MigrateOnStartup=true (as in docker-compose), creates/updates the schema on startup so
+    // a fresh clone runs without extra steps. Other environments migrate explicitly (dotnet ef database update, or a
+    // generated script).
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     {
         using IServiceScope scope = app.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
@@ -191,6 +195,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapControllers();
 
 app.Run();

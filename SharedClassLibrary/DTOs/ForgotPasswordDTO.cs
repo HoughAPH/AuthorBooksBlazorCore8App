@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace SharedClassLibrary.DTOs;
+
 public class ForgotPasswordDTO
 {
     [Required]

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 using System.Net;
 using System.Net.Http.Json;
-using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 

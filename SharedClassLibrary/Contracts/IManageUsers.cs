@@ -1,6 +1,7 @@
 using SharedClassLibrary.DTOs;
 
 namespace SharedClassLibrary.Contracts;
+
 public interface IManageUsers
 {
     Task<List<ManageUserDTO>> GetUsers();

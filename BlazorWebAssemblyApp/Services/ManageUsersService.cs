@@ -22,7 +22,7 @@ public class ManageUsersService(HttpClient httpClient) : IManageUsers
 
     public async Task UpdateUserRole(string userId, string role)
     {
-        var updateUserRoleDTO = new UpdateUserRoleDTO
+        UpdateUserRoleDTO updateUserRoleDTO = new()
         {
             UserId = userId,
             Role = role
@@ -46,7 +46,7 @@ public class ManageUsersService(HttpClient httpClient) : IManageUsers
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string uri, HttpContent? content = null)
     {
-        var request = new HttpRequestMessage(method, uri);
+        HttpRequestMessage request = new(method, uri);
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
         if (content is not null)

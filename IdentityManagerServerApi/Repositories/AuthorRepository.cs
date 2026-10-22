@@ -24,13 +24,20 @@ public class AuthorRepository(AppDbContext dbContext) : IAuthorRepository
     /// <summary>
     /// Saves the aggregate. The domain already rejects duplicate titles, but two concurrent requests can both pass
     /// that in-memory check; the unique (AuthorId, Title) index then rejects the second, and it is reported as the
-    /// same conflict the domain would have raised.
+    /// same conflict the domain would have raised. Likewise, if another request changed or deleted the author after
+    /// it was loaded, the version token no longer matches and the write is reported as a conflict.
     /// </summary>
     public async Task<int> SaveChanges()
     {
         try
         {
             return await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new DomainException(
+                "This author was changed or deleted by someone else. Reload and try again.",
+                DomainErrorKind.Conflict);
         }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {

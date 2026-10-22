@@ -1,5 +1,45 @@
 # AuthorBooksBlazorCore
 
+[![CI](https://github.com/HoughAPH/AuthorBooksBlazorCore8App/actions/workflows/ci.yml/badge.svg)](https://github.com/HoughAPH/AuthorBooksBlazorCore8App/actions/workflows/ci.yml)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A small but complete **ASP.NET Core Web API + Blazor WebAssembly** application for managing authors and their books, built to show how a modest .NET system can be structured with real domain rules, secure defaults and meaningful tests.
+
+## What this demonstrates
+
+| Area | What you will find |
+|---|---|
+| **Domain-driven design** | `Author` is an aggregate root and `Book` its child. All writes go through aggregate methods that enforce the rules (unique title per author, no deleting an author who has books) and raise a typed `DomainException`. |
+| **Optimistic concurrency** | Each aggregate carries a `Version` token that changes on every change to the author or its books. A stale edit (or two simultaneous writers) is rejected with `409 Conflict` instead of silently overwriting. |
+| **CQRS-style handlers, no MediatR** | `Features/{Authors,Books,Account}/{Commands,Queries}`: one file per use case, explicit handler registration, `Result` / `Result<T>` as the only outcome type. |
+| **Consistent HTTP contract** | Failures are `application/problem+json` with the right status (400/401/404/409/429). A global exception handler maps domain exceptions. |
+| **Server-side paging and search** | `GetAuthorsPage` and `GetBooksPage` return `PagedResult<T>` with a bounded page size; the Blazor lists use them. |
+| **Authentication and authorization** | ASP.NET Core Identity for users and roles, JWT bearer tokens, role-based endpoints (`Admin` / `User`), account lockout and per-user rate limiting on write endpoints. |
+| **Secrets handled properly** | No secrets in the repo: .NET user secrets locally (`scripts/setup.ps1`), environment variables or `.env` in Docker. The API refuses to start with a missing or short signing key. |
+| **Testing** | 140+ NUnit tests: domain unit tests, controller tests, and API integration tests through `WebApplicationFactory` on in-memory SQLite, including concurrency races and rate limiting. |
+| **Operability** | `/health` (database-backed) and `/health/live`, Serilog (console + SQL), security headers, CI on GitHub Actions, and a Docker Compose setup. |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["Blazor WebAssembly<br/>(BlazorWebAssemblyApp)"] -- "HTTP + JWT" --> Controllers
+    subgraph API["IdentityManagerServerApi"]
+        Controllers --> Handlers["Command / query handlers<br/>(Features/*)"]
+        Handlers --> Domain["Domain: Author aggregate + Book<br/>(rules, version token)"]
+        Handlers --> Repo["AuthorRepository / AppDbContext"]
+        Domain --- Repo
+    end
+    Repo --> DB[("SQL Server")]
+    Browser -. "shared DTOs, contracts, Result" .- Shared["SharedClassLibrary"]
+    API -. "shared DTOs, contracts, Result" .- Shared
+```
+
+Request flow: a controller receives the request, hands a command or query to its handler, the handler loads the `Author` aggregate (always with its books), calls a domain method, and saves through the repository. Domain rule violations become `Result` failures that the controller maps to HTTP; races are caught by the version token and the unique `(AuthorId, Title)` index.
+
+## Background
+
 This solution started from the original task requirement on the `master` branch, where only the API was needed.
 
 The Blazor WebAssembly application was added afterwards as a client so that the API endpoints could be exercised properly from a UI and not only through Swagger or ad hoc HTTP calls. It is therefore not the original requirement, but an extension to prove the API surface and authentication flow end to end.
@@ -14,14 +54,14 @@ At a high level the solution uses:
 - Blazor WebAssembly
 - Entity Framework Core
 - ASP.NET Core Identity
-- Repository pattern
+- Aggregate root + repository, with command/query handlers
 - Shared contracts and DTOs through a class library
 
 The design is not pure MVC in the classic ASP.NET MVC sense, but it follows the same separation of concerns:
 
 - presentation/client concerns in the Blazor app
 - HTTP endpoint concerns in the API
-- data access concerns in repositories
+- use cases in command/query handlers, data access in the repository and EF Core
 - shared contracts, DTOs, and models in the shared library
 
 ## Projects
@@ -36,7 +76,7 @@ Responsibilities include:
 - configuring EF Core and SQL Server access
 - configuring ASP.NET Core Identity
 - handling authentication and authorization
-- registering repository implementations
+- registering command/query handlers and repositories
 - exception handling and problem details
 - Swagger/OpenAPI support
 - Serilog configuration
@@ -87,18 +127,13 @@ The intention is to avoid duplicating request/response contracts between server 
 
 ## Architecture notes
 
-The solution uses the repository pattern on top of EF Core.
+- **Aggregate and repository.** `Author` is the aggregate root; `Book` is only reachable through it, and there is no `DbSet<Book>`. `IAuthorRepository` loads and saves whole aggregates, so every rule lives in one place.
+- **Commands and queries.** Writes are commands that load the aggregate, call a domain method and save. Reads are queries that project straight from `AppDbContext` to DTOs (`AsNoTracking`), without loading aggregates.
+- **Results, not exceptions, across the API boundary.** Handlers return `Result` / `Result<T>`; `ResultExtensions.ToActionResult` turns them into HTTP responses. A `DomainException` that escapes is mapped by the global exception handler.
+- **Concurrency.** `Author.Version` is an EF concurrency token that the aggregate replaces on every change. The client sends back the version it read; a mismatch (or a race caught by EF) is a `409`. The unique `(AuthorId, Title)` index backs the duplicate-title rule for any write that bypasses the version.
+- **Paging.** List endpoints that can grow (`GetAuthorsPage`, `GetBooksPage`) page and search on the server with a capped page size. The un-paged `GetAuthors` / `GetBooks` remain for dropdowns and simple consumers.
 
-That was a deliberate choice for this exercise, mainly to keep controller concerns and data-access concerns separated and to make the shared contracts explicit.
-
-The flow is roughly:
-
-- controller receives HTTP request
-- controller delegates to a contract/repository service
-- repository works through `AppDbContext`
-- DTOs / response models are returned to the caller
-
-For a small system like this, that level of abstraction is arguably more than EF Core strictly requires, but it keeps the code organised and aligns with the original intent of the exercise.
+For a system this small the structure is more than strictly necessary; it is deliberate, to show where each concern lives and how it is tested.
 
 ## Authentication and user management
 
@@ -181,6 +216,37 @@ In any non-Development environment the secrets come from environment variables (
 - **Tests:** `dotnet test AuthorBooksBlazorCore.Test` (in-memory SQLite, no database or secrets needed).
 - **Not on Windows / no LocalDB:** point `ConnectionStrings__DefaultConnection` at any SQL Server instance.
 
+## Quickstart with Docker (any OS)
+
+Runs SQL Server, the API and the Blazor client together. Only Docker is needed, not the .NET SDK or LocalDB.
+
+```bash
+cp .env.example .env        # then edit .env: set JWT_KEY, ADMIN_PASSWORD and a strong SA_PASSWORD
+docker compose up --build
+```
+
+- Client: <http://localhost:8081> (log in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`)
+- API health: <http://localhost:8080/health> (database-backed) and <http://localhost:8080/health/live>
+- The API applies the migrations on startup (`Database__MigrateOnStartup=true`) and seeds the admin. Data lives in the `sqldata` volume; `docker compose down -v` wipes it.
+- Ports 8080 (API) and 8081 (client) must be free on the host. If they are not, change the `ports:` mappings in `docker-compose.yml`, the `Cors__AllowedOrigins__0` value and `docker/client-appsettings.json` together.
+- `.env` is git-ignored and compose refuses to start while `JWT_KEY`, `ADMIN_PASSWORD` or `SA_PASSWORD` is unset, so there are no default credentials.
+- This runs the API in the Production environment: Swagger is off and password-reset tokens are never exposed. This is a local demo stack over plain HTTP, not a hardened deployment.
+
+## API at a glance
+
+| Method and route | Purpose | Access |
+|---|---|---|
+| `GET /api/Author/GetAuthorsPage?pageNumber&pageSize&search` | Paged, searchable authors | Any signed-in user |
+| `GET /api/Author/GetAuthors`, `GetAuthor/{id}` | All authors / one author (includes `version`) | Any signed-in user |
+| `POST /api/Author/AddAuthor`, `PUT UpdateAuthor/{id}`, `DELETE DeleteAuthor/{id}` | Author writes; `UpdateAuthor` honours `version` | Admin, rate limited |
+| `GET /api/Book/GetBooksPage?pageNumber&pageSize&search&authorId` | Paged, searchable books | Any signed-in user |
+| `GET /api/Book/GetBooks`, `GetAuthorBooks/{id}`, `GetBook/{id}` | Un-paged reads | Any signed-in user |
+| `POST AddBook`, `PUT UpdateBook/{id}`, `DELETE DeleteBook/{id}` | Book writes | Admin, rate limited |
+| `POST /api/Account/register`, `login`, `forgot-password`, `reset-password` | Account flows | Anonymous, rate limited |
+| `GET /health`, `/health/live` | Readiness (checks DB) / liveness | Anonymous |
+
+Swagger UI is available at `/swagger` in Development.
+
 ## Current status
 
 This is a working exercise solution with a practical client added on top of the API.
@@ -192,19 +258,18 @@ It should be viewed as:
 
 Some parts are intentionally simplified, especially around account recovery and production-grade identity workflows.
 
-## Known limitations / demo scope
+## Known limitations / roadmap
 
-This repository is intended as a demonstration project rather than a production template.
+This is a demonstration project, not a production template. Deliberate simplifications:
 
-Current limitations include:
+- **Tokens:** JWTs live in the browser with no refresh tokens or server-side revocation (logout just discards the token).
+- **Email:** no email sender is configured, so password reset is only usable in Development (the token is written to the API log).
+- **Concurrency scope:** optimistic concurrency is enforced on the `Author` aggregate (which includes its books). User management is intentionally out of scope.
+- **Transport:** the Docker setup is plain HTTP on localhost; put a TLS-terminating proxy in front for anything real.
+- **Client tests:** the API and domain are covered by tests; the Blazor components themselves are not.
+- **Observability:** structured logging only; no tracing or metrics yet.
 
-- the UI is intentionally simple and focused on exercising API flows
-- password reset flow is limited because no email sender is configured
-- configuration assumes local development defaults (LocalDB, local ports) unless overridden
-- error handling is pragmatic rather than fully standardized across every feature
-- the solution favors clarity and end-to-end demonstration over production hardening
-
-If this were being taken further, the next steps would include stronger configuration management, more consistent API conventions, improved validation/error contracts, and a more polished user experience.
+Natural next steps: refresh tokens, an email sender, API versioning, bUnit tests for the client and OpenTelemetry.
 
 ## Summary
 

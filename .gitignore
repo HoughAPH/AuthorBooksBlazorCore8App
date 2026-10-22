@@ -369,3 +369,6 @@ FodyWeavers.xsd
 
 # Test output
 TestResults/
+
+# Local secrets for docker compose
+.env

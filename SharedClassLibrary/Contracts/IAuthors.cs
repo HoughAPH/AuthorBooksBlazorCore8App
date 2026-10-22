@@ -7,6 +7,7 @@ public interface IAuthors
 {
     Task<List<AuthorDTO>> GetAuthors();
     Task<AuthorDTO?> GetAuthor(int id);
+    Task<PagedResult<AuthorDTO>> GetAuthorsPage(int pageNumber, int pageSize, string? search = null);
     Task<Result> AddAuthor(AuthorDTO author);
     Task<Result> UpdateAuthor(int id, AuthorDTO author);
     Task<Result> DeleteAuthor(int id);

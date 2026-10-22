@@ -16,6 +16,7 @@ public class BookController(
     IQueryHandler<GetBooksQuery, IEnumerable<BookDTO>> getBooks,
     IQueryHandler<GetAuthorBooksQuery, IEnumerable<BookDTO>> getAuthorBooks,
     IQueryHandler<GetBookQuery, BookDTO?> getBook,
+    IQueryHandler<GetBooksPageQuery, PagedResult<BookDTO>> getBooksPage,
     ICommandHandler<AddBookCommand> addBook,
     ICommandHandler<UpdateBookCommand> updateBook,
     ICommandHandler<DeleteBookCommand> deleteBook) : ControllerBase
@@ -27,6 +28,13 @@ public class BookController(
         IEnumerable<BookDTO> books = await getBooks.Handle(new GetBooksQuery());
         return Ok(books);
     }
+
+    /// <summary>One page of books ordered by title, optionally for one author and/or matching a search term.</summary>
+    [HttpGet]
+    [Route("GetBooksPage")]
+    public async Task<ActionResult<PagedResult<BookDTO>>> GetBooksPage(
+        int pageNumber = 1, int pageSize = Paging.DefaultPageSize, string? search = null, int? authorId = null) =>
+        Ok(await getBooksPage.Handle(new GetBooksPageQuery(pageNumber, pageSize, search, authorId)));
 
     [HttpGet]
     [Route("GetAuthorBooks/{id}")]

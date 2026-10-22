@@ -34,6 +34,11 @@
     </AuthorizeView>
 </div>
 
+<div class="input-group input-group-sm mb-2" style="max-width: 28rem;">
+    <input class="form-control" placeholder="Search title or author" @bind="search" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" />
+    <button class="btn btn-outline-secondary" type="button" @onclick="SearchAsync">Search</button>
+</div>
+
 @if (books == null)
 {
     <p><em>Loading...</em></p>
@@ -86,11 +91,11 @@ else
     public int AuthorId { get; set; } = 0;
 
     private int currentPage = 1;
-    private int pageSize = 5;
-    private int totalPages;
+    private const int pageSize = 5;
+    private int totalPages = 1;
     private IEnumerable<BookDTO>? books;
-    private IEnumerable<BookDTO> allBooks = [];
     private string pageHeading = "All Books";
+    private string search = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -106,29 +111,37 @@ else
             pageHeading = author is null
                 ? "Books for Selected Author"
                 : $"Books for {author.Name}";
-
-            allBooks = await BookService.GetAuthorBooks(AuthorId);
         }
         else
         {
             pageHeading = "All Books";
-            allBooks = await BookService.GetBooks();
         }
 
-        var totalItems = allBooks.Count();
-        totalPages = totalItems == 0
-            ? 1
-            : (int)Math.Ceiling((double)totalItems / pageSize);
+        int? authorFilter = AuthorId != 0 ? AuthorId : null;
+        PagedResult<BookDTO> page = await BookService.GetBooksPage(currentPage, pageSize, search, authorFilter);
 
+        totalPages = Math.Max(page.TotalPages, 1);
+
+        // The last page can disappear after a delete; step back and reload.
         if (currentPage > totalPages)
         {
             currentPage = totalPages;
+            page = await BookService.GetBooksPage(currentPage, pageSize, search, authorFilter);
         }
 
-        books = allBooks
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        books = page.Items;
+    }
+
+    private async Task SearchAsync()
+    {
+        currentPage = 1;
+        await LoadPageStateAsync();
+    }
+
+    private async Task OnSearchKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SearchAsync();
     }
 
     private async Task HandlePageChangedAsync(int page)

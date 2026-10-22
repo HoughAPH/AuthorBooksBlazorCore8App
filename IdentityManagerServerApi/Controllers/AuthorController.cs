@@ -15,6 +15,7 @@ namespace IdentityManagerServerApi.Controllers;
 public class AuthorController(
     IQueryHandler<GetAuthorsQuery, List<AuthorDTO>> getAuthors,
     IQueryHandler<GetAuthorQuery, AuthorDTO?> getAuthor,
+    IQueryHandler<GetAuthorsPageQuery, PagedResult<AuthorDTO>> getAuthorsPage,
     ICommandHandler<CreateAuthorCommand> createAuthor,
     ICommandHandler<RenameAuthorCommand> renameAuthor,
     ICommandHandler<DeleteAuthorCommand> deleteAuthor) : ControllerBase
@@ -26,6 +27,13 @@ public class AuthorController(
         List<AuthorDTO> authors = await getAuthors.Handle(new GetAuthorsQuery());
         return Ok(authors);
     }
+
+    /// <summary>One page of authors ordered by name. <paramref name="pageSize"/> is capped at 100.</summary>
+    [HttpGet]
+    [Route("GetAuthorsPage")]
+    public async Task<ActionResult<PagedResult<AuthorDTO>>> GetAuthorsPage(
+        int pageNumber = 1, int pageSize = Paging.DefaultPageSize, string? search = null) =>
+        Ok(await getAuthorsPage.Handle(new GetAuthorsPageQuery(pageNumber, pageSize, search)));
 
     [HttpGet]
     [Route("GetAuthor/{id}")]
@@ -55,7 +63,7 @@ public class AuthorController(
     [EnableRateLimiting(RateLimitPolicies.Writes)]
     public async Task<ActionResult<Result>> UpdateAuthor(int id, AuthorDTO author)
     {
-        Result result = await renameAuthor.Handle(new RenameAuthorCommand(id, author.Name));
+        Result result = await renameAuthor.Handle(new RenameAuthorCommand(id, author.Name, author.Version));
         return this.ToActionResult(result);
     }
 

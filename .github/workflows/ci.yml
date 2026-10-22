@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, AutorBooksBlazorCore10, APIDDDUpgrade ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore AuthorBooksBlazorCore.slnx
+
+      # Warnings are errors in CI (see Directory.Build.props).
+      - name: Build
+        run: dotnet build AuthorBooksBlazorCore.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test AuthorBooksBlazorCore.Test --configuration Release --no-build
+          --collect:"XPlat Code Coverage" --results-directory ./TestResults
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f docker/api.Dockerfile -t authorbooks-api .
+
+      - name: Build client image
+        run: docker build -f docker/client.Dockerfile -t authorbooks-web .

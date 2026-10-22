@@ -22,6 +22,17 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
         return [.. JsonHelper.DeserializeJsonString<AuthorDTO[]>(apiResponse)];
     }
 
+    public async Task<PagedResult<AuthorDTO>> GetAuthorsPage(int pageNumber, int pageSize, string? search = null)
+    {
+        string uri = $"{BaseUrl}/GetAuthorsPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri);
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return JsonHelper.DeserializeJsonString<PagedResult<AuthorDTO>>(apiResponse);
+    }
+
     public async Task<AuthorDTO?> GetAuthor(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthor/{id}");

@@ -41,3 +41,21 @@ public class GetBookHandler(AppDbContext dbContext) : IQueryHandler<GetBookQuery
     public Task<BookDTO?> Handle(GetBookQuery query) =>
         BookProjection.Books(dbContext).Where(b => b.Id == query.Id).FirstOrDefaultAsync();
 }
+
+public record GetBooksPageQuery(int PageNumber, int PageSize, string? Search, int? AuthorId);
+
+public class GetBooksPageHandler(AppDbContext dbContext) : IQueryHandler<GetBooksPageQuery, PagedResult<BookDTO>>
+{
+    public Task<PagedResult<BookDTO>> Handle(GetBooksPageQuery query)
+    {
+        IQueryable<BookDTO> books = BookProjection.Books(dbContext);
+
+        if (query.AuthorId is { } authorId)
+            books = books.Where(b => b.AuthorId == authorId);
+
+        if (Paging.Term(query.Search) is { } term)
+            books = books.Where(b => b.Title.ToLower().Contains(term) || b.AuthorName.ToLower().Contains(term));
+
+        return Paging.ToPage(books.OrderBy(b => b.Title).ThenBy(b => b.Id), query.PageNumber, query.PageSize);
+    }
+}

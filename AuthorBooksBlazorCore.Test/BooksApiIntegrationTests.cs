@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SharedClassLibrary.DTOs;
+using SharedClassLibrary.Models;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using SharedClassLibrary.Models;
 
 namespace AuthorBooksBlazorCore.Test;
 

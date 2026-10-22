@@ -32,6 +32,7 @@ public class UniqueBookTitleTests
     public async Task ConcurrentAddsOfTheSameTitle_SecondSaveIsRejectedAsConflict_AndOnlyOneBookIsStored()
     {
         // Two requests load the same author before either saves, so the in-memory duplicate check passes for both.
+        // Adding a book changes the aggregate's version, so the second save is stopped by the concurrency token.
         using IServiceScope scopeA = _factory.Services.CreateScope();
         using IServiceScope scopeB = _factory.Services.CreateScope();
         IAuthorRepository repoA = scopeA.ServiceProvider.GetRequiredService<IAuthorRepository>();
@@ -48,12 +49,42 @@ public class UniqueBookTitleTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(ex!.Kind, Is.EqualTo(DomainErrorKind.Conflict));
-            Assert.That(ex.Message, Is.EqualTo("This author already has a book with that title."));
+            Assert.That(ex.Message, Does.Contain("changed or deleted by someone else"));
         }
 
         using IServiceScope check = _factory.Services.CreateScope();
         Author stored = (await check.ServiceProvider.GetRequiredService<IAuthorRepository>().GetById(1))!;
         Assert.That(stored.Books.Count(b => b.Title == "Racing Title"), Is.EqualTo(1));
+    }
+
+    /// <summary>
+    /// The unique (AuthorId, Title) index is the last line of defence for writes that do not go through the author's
+    /// version, so it must still surface as the duplicate-title conflict.
+    /// </summary>
+    [Test]
+    public async Task UniqueIndexViolation_IsReportedAsDuplicateTitleConflict()
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        IAuthorRepository repo = scope.ServiceProvider.GetRequiredService<IAuthorRepository>();
+        IdentityManagerServerApi.Data.AppDbContext db =
+            scope.ServiceProvider.GetRequiredService<IdentityManagerServerApi.Data.AppDbContext>();
+
+        Author author = (await repo.GetById(1))!;
+        Book first = new("Index Title");
+        first.MoveTo(author);
+        db.Add(first);
+        await repo.SaveChanges();
+
+        Book duplicate = new("Index Title");
+        duplicate.MoveTo(author);
+        db.Add(duplicate);
+
+        DomainException? ex = Assert.Throws<DomainException>(() => repo.SaveChanges().GetAwaiter().GetResult());
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ex!.Kind, Is.EqualTo(DomainErrorKind.Conflict));
+            Assert.That(ex.Message, Is.EqualTo("This author already has a book with that title."));
+        }
     }
 
     [Test]

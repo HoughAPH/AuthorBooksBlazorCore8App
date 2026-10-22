@@ -5,7 +5,7 @@ using SharedClassLibrary.Models;
 
 namespace IdentityManagerServerApi.Features.Authors.Commands;
 
-public record RenameAuthorCommand(int Id, string Name);
+public record RenameAuthorCommand(int Id, string Name, Guid? ExpectedVersion = null);
 
 public class RenameAuthorHandler(IAuthorRepository authors) : ICommandHandler<RenameAuthorCommand>
 {
@@ -18,6 +18,7 @@ public class RenameAuthorHandler(IAuthorRepository authors) : ICommandHandler<Re
 
         try
         {
+            author.EnsureVersion(command.ExpectedVersion);
             author.Rename(command.Name);
         }
         catch (DomainException ex)

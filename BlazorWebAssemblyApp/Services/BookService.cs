@@ -32,6 +32,20 @@ public class BookService(HttpClient httpClient) : IBooks
         return [.. JsonHelper.DeserializeJsonString<BookDTO[]>(apiResponse)];
     }
 
+    public async Task<PagedResult<BookDTO>> GetBooksPage(int pageNumber, int pageSize, string? search = null, int? authorId = null)
+    {
+        string uri = $"{BaseUrl}/GetBooksPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
+        if (authorId is not null)
+            uri += $"&authorId={authorId}";
+
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri);
+        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        string apiResponse = await response.Content.ReadAsStringAsync();
+        return JsonHelper.DeserializeJsonString<PagedResult<BookDTO>>(apiResponse);
+    }
+
     public async Task<BookDTO?> GetBook(int id)
     {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBook/{id}");
