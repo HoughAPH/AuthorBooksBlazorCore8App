@@ -20,6 +20,18 @@ A small but complete **ASP.NET Core Web API + Blazor WebAssembly** application f
 | **Testing** | 140+ NUnit tests: domain unit tests, controller tests, and API integration tests through `WebApplicationFactory` on in-memory SQLite, including concurrency races and rate limiting. |
 | **Operability** | `/health` (database-backed) and `/health/live`, Serilog (console + SQL), security headers, CI on GitHub Actions, and a Docker Compose setup. |
 
+## Screenshots
+
+Plain Bootstrap 5 styling, no custom theme. Admins get the Create / Edit / Delete actions; regular users see the same lists read-only.
+
+| Authors | Books (server-side search) |
+|---|---|
+| ![Authors list](docs/images/authors.png) | ![Books list filtered by "domain"](docs/images/books-search.png) |
+
+| Home | Edit book | Login |
+|---|---|---|
+| ![Home page](docs/images/home.png) | ![Edit book form](docs/images/book-edit.png) | ![Login page](docs/images/login.png) |
+
 ## Architecture
 
 ```mermaid
