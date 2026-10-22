@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 .NET 10 solution (`AuthorBooksBlazorCore.slnx`). Run from the repo root.
 
 - Build: `dotnet build AuthorBooksBlazorCore.slnx`
+- First-time setup: `powershell -File scripts/setup.ps1` (user secrets: `Jwt:Key`, seeded admin). Development uses SQL Server LocalDB (`appsettings.Development.json`) and auto-migrates.
 - Run API: `dotnet run --project IdentityManagerServerApi` (HTTPS; Swagger is enabled in Development; health check at `/health`)
 - Run client: `dotnet run --project BlazorWebAssemblyApp` (default origin `https://localhost:7254`)
 - All tests: `dotnet test AuthorBooksBlazorCore.Test`
@@ -26,14 +27,14 @@ Three projects plus tests:
 
 ### Authentication (JWT, branch `APIDDDUpgrade`)
 
-The README still says cookie auth; the code has moved to JWT bearer.
-- API: `AddIdentity` for user/role storage, but `AddJwtBearer` is the default authenticate/challenge scheme. Tokens are issued by `Features/Account/Queries/Login.cs` (failed passwords count toward Identity lockout; unknown email and wrong password give the same 401); config keys `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` (`Jwt:Key` is required at startup and is not in the tracked appsettings — supply it via user secrets or environment; tests set their own in `CustomWebApplicationFactory`).
+The API authenticates with JWT bearer tokens (the README describes the same).
+- API: `AddIdentity` for user/role storage, but `AddJwtBearer` is the default authenticate/challenge scheme. Tokens are issued by `Features/Account/Queries/Login.cs` (failed passwords count toward Identity lockout; unknown email and wrong password give the same 401); config keys `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` (`Jwt:Issuer`/`Audience` defaults are tracked in appsettings.json; `Jwt:Key` is required at startup (32+ chars, enforced in `Program.cs`) and is never tracked — `scripts/setup.ps1` generates it into user secrets, otherwise use environment variables; tests set their own in `CustomWebApplicationFactory`).
 - Client: `Authentication/TokenStorage` persists the token, `BearerTokenHandler` attaches it to the `HttpClient`, and `ApiAuthenticationStateProvider` builds the `ClaimsPrincipal` from it. `CustomAuthenticationStateProvider` is a leftover/alternate provider; `ApiAuthenticationStateProvider` is the one registered.
 - CORS policy `BlazorWebassembly` is driven by `Cors:AllowedOrigins`. Only GET/POST/DELETE/PUT/HEAD are allowed, so adding PATCH/OPTIONS-dependent endpoints requires updating the policy.
 
 ### Testing setup
 
-Integration tests use `WebApplicationFactory<Program>` via `CustomWebApplicationFactory` (the API exposes `public partial class Program`). It sets the environment to `IntegrationTesting`, which in `Program.cs`: skips the SQL Server `AddDbContext` registration, the Serilog config sink and `SeedAdminAsync`. The factory substitutes an in-memory SQLite connection, recreates and seeds the DB (authors 1–3, books 1–2, built through the aggregate with generated ids) on every client creation, and supplies a test `Jwt:Key` via `UseSetting` (user secrets only load in Development), and replaces auth with `TestAuthHandler` (defined in `BooksApiIntegrationTests.cs`; role chosen via a request header — use `CreateAuthenticatedClient(role)`). Don't add environment-specific startup code that breaks under `IntegrationTesting`.
+Integration tests use `WebApplicationFactory<Program>` via `CustomWebApplicationFactory` (the API exposes `public partial class Program`). It sets the environment to `IntegrationTesting`, which in `Program.cs`: skips the SQL Server `AddDbContext` registration (and the `DefaultConnection` requirement), the Serilog config sink and `SeedAdminAsync`. The factory substitutes an in-memory SQLite connection, recreates and seeds the DB (authors 1–3, books 1–2, built through the aggregate with generated ids) on every client creation, and supplies a test `Jwt:Key` via `UseSetting` (user secrets only load in Development), and replaces auth with `TestAuthHandler` (defined in `BooksApiIntegrationTests.cs`; role chosen via a request header — use `CreateAuthenticatedClient(role)`). Don't add environment-specific startup code that breaks under `IntegrationTesting`.
 Account tests (`AccountApiIntegrationTests`, `AdminSeederTests`) use the real Identity stack on SQLite. The factory creates the `Admin`/`User` roles, swaps `IResetTokenSender` for `CapturingResetTokenSender` (exposed as `factory.ResetTokens`), and takes extra config through `factory.Settings` (set before the first client; used for `Seed:*`). Every `CreateAnonymousClient`/`CreateAuthenticatedClient` call wipes and reseeds the database, so create clients before registering users. To call authenticated endpoints as a real user, pass that user's Identity id as `userId`. `AdminSeeder.SeedAdminAsync(IServiceProvider)` is invoked explicitly by tests, since the startup call is skipped.
 
 ## Conventions
@@ -43,6 +44,6 @@ Account tests (`AccountApiIntegrationTests`, `AdminSeederTests`) use the real Id
 
 ### Accounts, admin seeding and password reset
 
-- Registration always creates a `User`. The `Admin` is seeded at startup by `Features/Account/AdminSeeder.cs` from `Seed:AdminEmail` / `Seed:AdminPassword` (optional `Seed:AdminName`); it also ensures the `Admin` and `User` roles exist, is idempotent, and is skipped under `IntegrationTesting`. Set the values with user secrets; the database must be migrated first or startup fails.
+- Registration always creates a `User`. The `Admin` is seeded at startup by `Features/Account/AdminSeeder.cs` from `Seed:AdminEmail` / `Seed:AdminPassword` (optional `Seed:AdminName`); it also ensures the `Admin` and `User` roles exist, is idempotent, and is skipped under `IntegrationTesting`. `scripts/setup.ps1` writes them (generated password) into user secrets. In Development `Program.cs` runs `Database.MigrateAsync()` before seeding; other environments must migrate first or startup fails.
 - Forgot-password never returns the token. `ForgotPasswordHandler` passes it to `IResetTokenSender` and always answers with the same 200 message, whether or not the email exists. Development registers `LoggingResetTokenSender` (token written to the API log; the user pastes it into the reset page); other environments get `NoResetTokenSender`, which never exposes it. Replace with a real email sender when email is in scope.
 - Logout is a no-op on the server (stateless JWTs); the client just discards its token.
