@@ -372,3 +372,7 @@ TestResults/
 
 # Local secrets for docker compose
 .env
+
+# Local Claude Code / Visual Studio tooling (personal, not part of the project)
+.claude/
+.mcp.json
