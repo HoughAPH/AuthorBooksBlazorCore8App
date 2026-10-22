@@ -1,7 +1,7 @@
-﻿using IdentityManagerServerApi.Domain;
+using System.Net;
+using IdentityManagerServerApi.Domain;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace IdentityManagerServerApi.Exceptions;
 

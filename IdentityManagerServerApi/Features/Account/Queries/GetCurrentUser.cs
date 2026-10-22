@@ -1,8 +1,8 @@
+using System.Security.Claims;
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Features.Common;
 using Microsoft.AspNetCore.Identity;
 using SharedClassLibrary.DTOs;
-using System.Security.Claims;
 
 namespace IdentityManagerServerApi.Features.Account.Queries;
 

@@ -1,8 +1,8 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using SharedClassLibrary.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using SharedClassLibrary.Models;
 namespace SharedClassLibrary.Helpers;
 
 public static class JwtHelper

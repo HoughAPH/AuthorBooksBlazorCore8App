@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using IdentityManagerServerApi.Domain;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Repositories;
@@ -7,8 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net;
-using System.Text.Json;
 
 namespace AuthorBooksBlazorCore.Test;
 

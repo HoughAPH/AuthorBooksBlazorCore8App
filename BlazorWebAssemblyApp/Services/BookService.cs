@@ -1,21 +1,21 @@
-﻿using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using System.Net;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
-using System.Net;
 
 namespace BlazorWebAssemblyApp.Services;
 
 public class BookService(HttpClient httpClient) : IBooks
 {
-    private const string BaseUrl = "api/Book";
-    private readonly HttpClient httpClient = httpClient;
+    private const string _baseUrl = "api/Book";
+    private readonly HttpClient _httpClient = httpClient;
 
     public async Task<IEnumerable<BookDTO>> GetBooks()
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBooks");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{_baseUrl}/GetBooks");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -24,8 +24,8 @@ public class BookService(HttpClient httpClient) : IBooks
 
     public async Task<IEnumerable<BookDTO>> GetAuthorBooks(int id)
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthorBooks/{id}");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{_baseUrl}/GetAuthorBooks/{id}");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -34,12 +34,12 @@ public class BookService(HttpClient httpClient) : IBooks
 
     public async Task<PagedResult<BookDTO>> GetBooksPage(int pageNumber, int pageSize, string? search = null, int? authorId = null)
     {
-        string uri = $"{BaseUrl}/GetBooksPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
+        string uri = $"{_baseUrl}/GetBooksPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
         if (authorId is not null)
             uri += $"&authorId={authorId}";
 
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri);
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -48,8 +48,8 @@ public class BookService(HttpClient httpClient) : IBooks
 
     public async Task<BookDTO?> GetBook(int id)
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetBook/{id}");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{_baseUrl}/GetBook/{id}");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
@@ -64,10 +64,10 @@ public class BookService(HttpClient httpClient) : IBooks
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
-            $"{BaseUrl}/AddBook",
+            $"{_baseUrl}/AddBook",
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Book added successfully.", "Book could not be added.");
     }
 
@@ -75,17 +75,17 @@ public class BookService(HttpClient httpClient) : IBooks
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
-            $"{BaseUrl}/UpdateBook/{id}",
+            $"{_baseUrl}/UpdateBook/{id}",
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(book)));
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Book updated successfully.", "Book could not be updated.");
     }
 
     public async Task<Result> DeleteBook(int id)
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteBook/{id}");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{_baseUrl}/DeleteBook/{id}");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Book deleted successfully.", "Book could not be deleted.");
     }
 

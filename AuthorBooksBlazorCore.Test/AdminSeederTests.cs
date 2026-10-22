@@ -1,10 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Features.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using SharedClassLibrary.DTOs;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace AuthorBooksBlazorCore.Test;
 

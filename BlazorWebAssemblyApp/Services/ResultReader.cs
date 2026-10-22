@@ -1,6 +1,6 @@
-using SharedClassLibrary.Models;
 using System.Net;
 using System.Text.Json;
+using SharedClassLibrary.Models;
 
 namespace BlazorWebAssemblyApp.Services;
 

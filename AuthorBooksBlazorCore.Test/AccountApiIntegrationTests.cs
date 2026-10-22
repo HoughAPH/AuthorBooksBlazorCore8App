@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using IdentityManagerServerApi.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -5,8 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace AuthorBooksBlazorCore.Test;
 

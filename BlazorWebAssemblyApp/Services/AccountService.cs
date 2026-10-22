@@ -1,10 +1,10 @@
+using System.Net;
 using BlazorWebAssemblyApp.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
-using System.Net;
 
 namespace BlazorWebAssemblyApp.Services;
 

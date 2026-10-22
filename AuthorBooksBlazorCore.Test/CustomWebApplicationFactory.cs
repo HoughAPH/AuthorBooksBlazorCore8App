@@ -1,4 +1,6 @@
-﻿using IdentityManagerServerApi.Data;
+using System.Data.Common;
+using System.Net.Http.Headers;
+using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Domain;
 using IdentityManagerServerApi.Features.Account;
 using Microsoft.AspNetCore.Authentication;
@@ -9,8 +11,6 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Data.Common;
-using System.Net.Http.Headers;
 
 namespace AuthorBooksBlazorCore.Test;
 

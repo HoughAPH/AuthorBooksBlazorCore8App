@@ -1,3 +1,4 @@
+using System.Text;
 using IdentityManagerServerApi.Data;
 using IdentityManagerServerApi.Exceptions;
 using IdentityManagerServerApi.Features.Account;
@@ -18,7 +19,6 @@ using Serilog;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
-using System.Text;
 
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);

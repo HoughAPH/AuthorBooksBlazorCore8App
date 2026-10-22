@@ -1,21 +1,21 @@
-﻿using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using System.Net;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Helpers;
 using SharedClassLibrary.Models;
-using System.Net;
 
 namespace BlazorWebAssemblyApp.Services;
 
 public class AuthorsService(HttpClient httpClient) : IAuthors
 {
-    private const string BaseUrl = "api/Author";
-    private readonly HttpClient httpClient = httpClient;
+    private const string _baseUrl = "api/Author";
+    private readonly HttpClient _httpClient = httpClient;
 
     public async Task<List<AuthorDTO>> GetAuthors()
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthors");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{_baseUrl}/GetAuthors");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -24,9 +24,9 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
 
     public async Task<PagedResult<AuthorDTO>> GetAuthorsPage(int pageNumber, int pageSize, string? search = null)
     {
-        string uri = $"{BaseUrl}/GetAuthorsPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
+        string uri = $"{_baseUrl}/GetAuthorsPage?pageNumber={pageNumber}&pageSize={pageSize}&search={Uri.EscapeDataString(search ?? string.Empty)}";
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri);
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -35,8 +35,8 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
 
     public async Task<AuthorDTO?> GetAuthor(int id)
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{BaseUrl}/GetAuthor/{id}");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"{_baseUrl}/GetAuthor/{id}");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
@@ -51,10 +51,10 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Post,
-            $"{BaseUrl}/AddAuthor",
+            $"{_baseUrl}/AddAuthor",
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Author added successfully.", "Author could not be added.");
     }
 
@@ -62,17 +62,17 @@ public class AuthorsService(HttpClient httpClient) : IAuthors
     {
         using HttpRequestMessage request = CreateRequest(
             HttpMethod.Put,
-            $"{BaseUrl}/UpdateAuthor/{id}",
+            $"{_baseUrl}/UpdateAuthor/{id}",
             JsonHelper.GenerateStringContent(JsonHelper.SerializeObj(author)));
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Author updated successfully.", "Author could not be updated.");
     }
 
     public async Task<Result> DeleteAuthor(int id)
     {
-        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{BaseUrl}/DeleteAuthor/{id}");
-        using HttpResponseMessage response = await httpClient.SendAsync(request);
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Delete, $"{_baseUrl}/DeleteAuthor/{id}");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request);
         return await ResultReader.ToResult(response, "Author deleted successfully.", "Author could not be deleted.");
     }
 

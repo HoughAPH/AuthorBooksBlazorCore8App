@@ -1,3 +1,4 @@
+using System.Reflection;
 using IdentityManagerServerApi.Controllers;
 using IdentityManagerServerApi.Features.Books.Commands;
 using IdentityManagerServerApi.Features.Books.Queries;
@@ -7,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SharedClassLibrary.DTOs;
 using SharedClassLibrary.Models;
-using System.Reflection;
 
 namespace AuthorBooksBlazorCore.Test;
 

@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 using SharedClassLibrary.Contracts;
 using SharedClassLibrary.DTOs;
-using System.Security.Claims;
 
 namespace BlazorWebAssemblyApp.Authentication;
 
