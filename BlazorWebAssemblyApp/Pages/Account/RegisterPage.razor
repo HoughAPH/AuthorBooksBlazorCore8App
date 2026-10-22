@@ -4,84 +4,69 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IUserAccount AccountService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IJSRuntime js
+@inject BlazorWebAssemblyApp.Services.INotificationService NotificationService
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-6">
-            <EditForm Model="User" OnValidSubmit="HandleRegistration" Enhance>
-                <div class="card">
-                    <div class="card-header">Create An Account</div>
-                    <div class="card-body">
+<PageTitle>Sign up</PageTitle>
 
-                        @* Fullname *@
-                        <div class="form-group mb-3">
-                            <InputText @bind-Value="User.Name"
-                                   class="form-control"
-                                   placeholder="Fullname">
-                            </InputText>
-                        </div>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 col-xl-4">
+        <EditForm Model="User" OnValidSubmit="HandleRegistration" Enhance>
+            <DataAnnotationsValidator />
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Create an account</div>
+                <div class="card-body">
+                    <ValidationSummary />
 
-                        @* Email Address *@
-                        <div class="form-group mb-3">
-                            <InputText @bind-Value="User.Email"
-                                   class="form-control"
-                                   type="email"
-                                   placeholder="Email Address">
-                            </InputText>
-                        </div>
-                        <div class="mb-3" style="@(role == "Admin" ? "display:block": "display:hidden")">
-                            <label class="form-label">Role</label>
-                            <InputSelect class="form-control" @bind-Value=User.Role>
-                                <option value="User">User </option>
+                    <div class="mb-3">
+                        <label for="RegName" class="form-label">Full name</label>
+                        <InputText id="RegName" @bind-Value="User.Name" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="RegEmail" class="form-label">Email address</label>
+                        <InputText id="RegEmail" @bind-Value="User.Email" class="form-control" type="email" />
+                    </div>
+
+                    @if (role == "Admin")
+                    {
+                        <div class="mb-3">
+                            <label for="RegRole" class="form-label">Role</label>
+                            <InputSelect id="RegRole" class="form-select" @bind-Value="User.Role">
+                                <option value="User">User</option>
                                 <option value="Author">Author</option>
                             </InputSelect>
                         </div>
-                        @* Password *@
-                        <div class="form-group">
-                            <div class="input-group mb-3">
-                                <InputText @bind-Value="User.Password"
-                                           class="form-control"
-                                           type="@(ShowPassword is true? "text":"password")"
-                                           placeholder="Password"
-                                           aria-label="Password"
-                                           aria-describedby="Password">
-                                </InputText>
+                    }
 
-                                <span class="input-group-text cursorStyle"
-                                      id="Password"
-                                      @onclick="ShowPasswordEvent"> @(ShowPassword is true ? "Hide" : "Show") </span>
-                            </div>
+                    <div class="mb-3">
+                        <label for="RegPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <InputText id="RegPassword" @bind-Value="User.Password" class="form-control"
+                                       type="@(ShowPassword ? "text" : "password")" />
+                            <button class="btn btn-outline-secondary" type="button" @onclick="ShowPasswordEvent">
+                                @(ShowPassword ? "Hide" : "Show")
+                            </button>
                         </div>
+                    </div>
 
-                        @* Confirm Password *@
-                        <div class="form-group">
-                            <div class="input-group mb-3">
-                                <InputText @bind-Value="User.ConfirmPassword"
-                                           class="form-control"
-                                           type="@(ShowConfirmPassword is true? "text":"password")"
-                                           placeholder="Confirm Password"
-                                           aria-label="ConfirmPassword"
-                                           aria-describedby="Confirm-Password">
-                                </InputText>
-
-                                <span class="input-group-text cursorStyle"
-                                      id="ConfirmPassword"
-                                      @onclick="ShowConfirmPasswordEvent"> @(ShowConfirmPassword is true ? "Hide" : "Show") </span>
-                            </div>
+                    <div class="mb-3">
+                        <label for="RegConfirm" class="form-label">Confirm password</label>
+                        <div class="input-group">
+                            <InputText id="RegConfirm" @bind-Value="User.ConfirmPassword" class="form-control"
+                                       type="@(ShowConfirmPassword ? "text" : "password")" />
+                            <button class="btn btn-outline-secondary" type="button" @onclick="ShowConfirmPasswordEvent">
+                                @(ShowConfirmPassword ? "Hide" : "Show")
+                            </button>
                         </div>
-                        <a class="text-primary cursorStyle text-center">Login Instead</a>
+                    </div>
 
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-primary float-end"
-                                type="submit">
-                            Register
-                        </button>
-                    </div>
+                    <button class="btn btn-primary w-100" type="submit">Register</button>
                 </div>
-            </EditForm>
-        </div>
+                <div class="card-footer text-body-secondary">
+                    Already registered? <a href="/login">Login instead</a>
+                </div>
+            </div>
+        </EditForm>
     </div>
 </div>
 
@@ -95,20 +80,20 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         role = authState.User?.IsInRole("Admin") == true ? "Admin" : string.Empty;
-
     }
-
 
     private async Task HandleRegistration()
     {
         Result result = await AccountService.CreateAccount(User);
 
-        await js.InvokeVoidAsync("alert", result.Message);
-
         if (result.Succeeded)
         {
+            await NotificationService.ShowSuccessAsync(result.Message);
             User = new();
+            return;
         }
+
+        await NotificationService.ShowWarningAsync(result.Message, "Registration failed");
     }
 
     void ShowPasswordEvent() => ShowPassword = !ShowPassword;

@@ -16,21 +16,24 @@
 
 @if (book == null)
 {
-    <p><em>Retrieving the book...</em></p>
+    <div class="d-flex align-items-center gap-2 text-secondary">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span>Loading...</span>
+    </div>
 }
 else
 {
-    <div class="container mt-5 shadow-sm">
-        <div class="row justify-content-center">
+    <div>
+        <div class="row">
             <div class="col-md-8">
                 <div class="mb-3">
-                    <button type="button" class="btn btn-secondary" @onclick="NavigateBackToList">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="NavigateBackToList">
                         @(IdEdit != 0 ? "Back to List" : "Cancel")
                     </button>
                 </div>
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h3 class="card-title">@headerTitle</h3>
+                        <h2 class="card-title h4 mb-0">@headerTitle</h2>
                     </div>
                     <div class="card-body">
                         <EditForm Enhance Model="book" OnValidSubmit="OnValidSubmitAsync">
@@ -42,7 +45,7 @@ else
                             </div>
                             <div class="mb-3">
                                 <label for="BookAuthor" class="form-label fw-bold">Author</label>
-                                <InputSelect id="BookAuthor" class="form-control" @bind-Value="book.AuthorId" disabled="@(authors?.Count <= 1)">
+                                <InputSelect id="BookAuthor" class="form-select" @bind-Value="book.AuthorId" disabled="@(authors?.Count <= 1)">
                                     @if (authors?.Count > 1)
                                     {
                                         <option value="0">-- SELECT --</option>
@@ -56,7 +59,7 @@ else
                                     }
                                 </InputSelect>
                             </div>
-                            <div class="card-footer bg-light d-flex justify-content-start py-3">
+                            <div class="d-flex gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary">Save</button>
                             </div>
                         </EditForm>

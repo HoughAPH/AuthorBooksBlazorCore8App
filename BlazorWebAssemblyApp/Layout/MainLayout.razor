@@ -1,34 +1,37 @@
 ﻿@using BlazorWebAssemblyApp.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
 @using SharedClassLibrary.Contracts
 @inject ApiAuthenticationStateProvider AuthStateProvider
 @inject IUserAccount AccountService
 @inject NavigationManager NavManager
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
-                <Authorized>
-                    Welcome,  @context.User.Identity?.Name  
-                    <button class="btn btn-danger ms-3" @onclick="Logout"> Logout</button>
-                </Authorized>
-                <NotAuthorized>
-                    Welcome, Guest
-                    <button class="btn btn-primary" @onclick="Signup"> SignUp</button>
-                    <button class="btn btn-primary" @onclick="Login"> Login</button>
-                </NotAuthorized>
-            </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+<div class="container-fluid">
+    <div class="row min-vh-100">
+        <div class="col-12 col-md-3 col-xl-2 bg-dark px-0">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+        <div class="col-12 col-md-9 col-xl-10 px-0">
+            <header class="navbar bg-body-tertiary border-bottom px-4 py-3 justify-content-end gap-2">
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="me-2">Signed in as <strong>@context.User.Identity?.Name</strong></span>
+                        <button class="btn btn-outline-danger" @onclick="Logout">Logout</button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <span class="me-2">Welcome, Guest</span>
+                        <button class="btn btn-outline-primary" @onclick="Signup">Sign up</button>
+                        <button class="btn btn-primary" @onclick="Login">Login</button>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </header>
+
+            <main class="p-4">
+                @Body
+            </main>
+        </div>
+    </div>
 </div>
 
 <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>

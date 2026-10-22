@@ -10,60 +10,74 @@
 
 <PageTitle>Authors</PageTitle>
 
-<h3 class="mb-2">Authors</h3>
-<AuthorizeView Roles="Admin">
-    <Authorized>
-        <button class="btn btn-primary" @onclick="NavigateToAuthorPage">
-            Create New
-        </button>
-    </Authorized>
-</AuthorizeView>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Authors</h2>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <button class="btn btn-primary" @onclick="NavigateToAuthorPage">Create New</button>
+        </Authorized>
+    </AuthorizeView>
+</div>
 
-<div class="input-group input-group-sm my-2" style="max-width: 28rem;">
-    <input class="form-control" placeholder="Search authors" @bind="search" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" />
-    <button class="btn btn-outline-secondary" type="button" @onclick="SearchAsync">Search</button>
+<div class="row mb-3">
+    <div class="col-md-6 col-xl-4">
+        <div class="input-group">
+            <input class="form-control" placeholder="Search authors" aria-label="Search authors"
+                   @bind="search" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" />
+            <button class="btn btn-outline-secondary" type="button" @onclick="SearchAsync">Search</button>
+        </div>
+    </div>
 </div>
 
 @if (authors is null)
 {
-    <p><em>Loading...</em></p>
+    <div class="d-flex align-items-center gap-2 text-secondary">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span>Loading...</span>
+    </div>
 }
 else
 {
-    <div class="table-interactive">
-    <table class="table table-sm table-striped mt-2" style="--bs-table-striped-bg: rgba(0, 0, 0, 0.15);">
-        <tbody>
-            @foreach (var author in authors)
-            {
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <td>@author.Name</td>
-                    <td>
-                        <AuthorizeView Roles="Admin">
-                            <Authorized>
-                                <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToEditAuthorPage(author.Id))">
-                                    <i class="oi oi-pencil">Edit</i>
-                                </button>
-                                <button id="DeleteAuthor" type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(author.Id))">
-                                    <i class="oi oi-trash">Delete</i>
-                                </button>
-                            </Authorized>
-                        </AuthorizeView>
-
-                        <a class="btn btn-primary btn-sm" href="/books/@author.Id">
-                            <i class="oi oi-pencil">Author Books</i>
-                        </a>
-                    </td>
+                    <th scope="col" class="fw-bold">Name</th>
+                    <th scope="col" class="fw-bold">Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-        @if (totalPages > 1)
-        {
-            <Pagination CurrentPage="currentPage"
-                        TotalPages="totalPages"
-                        OnPageChanged="HandlePageChangedAsync" />
-        }
+            </thead>
+            <tbody>
+                @foreach (AuthorDTO author in authors)
+                {
+                    <tr>
+                        <td>@author.Name</td>
+                        <td class="text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" href="/books/@author.Id">Books</a>
+                            <AuthorizeView Roles="Admin">
+                                <Authorized>
+                                    <button type="button" class="btn btn-sm btn-outline-primary ms-1" @onclick="@(() => NavigateToEditAuthorPage(author.Id))">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" @onclick="@(async () => await DeleteAsync(author.Id))">Delete</button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </td>
+                    </tr>
+                }
+                @if (authors.Count == 0)
+                {
+                    <tr>
+                        <td colspan="2" class="text-center text-secondary py-4">No authors found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
+
+    @if (totalPages > 1)
+    {
+        <Pagination CurrentPage="currentPage"
+                    TotalPages="totalPages"
+                    OnPageChanged="HandlePageChangedAsync" />
+    }
 }
 
 @code {
@@ -145,4 +159,3 @@ else
         await LoadAuthorsAsync();
     }
 }
-

@@ -1,4 +1,4 @@
-﻿@page "/books"
+@page "/books"
 @page "/books/{AuthorId:int}"
 @using Microsoft.AspNetCore.Components.Authorization
 @using SharedClassLibrary.Contracts
@@ -13,45 +13,47 @@
 
 <PageTitle>Books</PageTitle>
 
-<div class="mb-3">
-    @if (AuthorId != 0)
-    {
-        <div class="mb-2">
-            <button type="button" class="btn btn-secondary" @onclick="ShowAllBooks">
-                Show All Books
-            </button>
-        </div>
-    }
-
-    <h3 class="mb-2">@pageHeading</h3>
-
-    <AuthorizeView Roles="Admin">
-        <Authorized>
-            <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">
-                New Book
-            </button>
-        </Authorized>
-    </AuthorizeView>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">@pageHeading</h2>
+    <div class="d-flex gap-2">
+        @if (AuthorId != 0)
+        {
+            <button type="button" class="btn btn-outline-secondary" @onclick="ShowAllBooks">Show All Books</button>
+        }
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <button class="btn btn-primary" @onclick="@(() => NavigateToBookPage(0))">New Book</button>
+            </Authorized>
+        </AuthorizeView>
+    </div>
 </div>
 
-<div class="input-group input-group-sm mb-2" style="max-width: 28rem;">
-    <input class="form-control" placeholder="Search title or author" @bind="search" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" />
-    <button class="btn btn-outline-secondary" type="button" @onclick="SearchAsync">Search</button>
+<div class="row mb-3">
+    <div class="col-md-6 col-xl-4">
+        <div class="input-group">
+            <input class="form-control" placeholder="Search title or author" aria-label="Search books"
+                   @bind="search" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" />
+            <button class="btn btn-outline-secondary" type="button" @onclick="SearchAsync">Search</button>
+        </div>
+    </div>
 </div>
 
 @if (books == null)
 {
-    <p><em>Loading...</em></p>
+    <div class="d-flex align-items-center gap-2 text-secondary">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span>Loading...</span>
+    </div>
 }
 else
 {
-    <div class="table-interactive">
-        <table class="table table-sm table-striped" style="--bs-table-striped-bg: rgba(0, 0, 0, 0.15);">
-            <thead>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <th>Title</th>
-                    <th>Author Name</th>
-                    <th></th>
+                    <th scope="col" class="fw-bold">Title</th>
+                    <th scope="col" class="fw-bold">Author Name</th>
+                    <th scope="col" class="fw-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,30 +62,32 @@ else
                     <tr>
                         <td>@book.Title</td>
                         <td>@book.AuthorName</td>
-                        <td>
+                        <td class="text-nowrap">
                             <AuthorizeView Roles="Admin">
                                 <Authorized>
-                                    <button type="button" class="btn btn-primary" @onclick="@(() => NavigateToBookPage(book.Id))">
-                                        <i class="icon-link oi oi-pencil">Edit</i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm ms-2" @onclick="@(async () => await DeleteAsync(book))">
-                                        <i class="icon-link oi oi-trash">Delete</i>
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="@(() => NavigateToBookPage(book.Id))">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" @onclick="@(async () => await DeleteAsync(book))">Delete</button>
                                 </Authorized>
                             </AuthorizeView>
                         </td>
                     </tr>
                 }
+                @if (!books.Any())
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-secondary py-4">No books found.</td>
+                    </tr>
+                }
             </tbody>
         </table>
-
-        @if (totalPages > 1)
-        {
-            <Pagination CurrentPage="currentPage"
-                        TotalPages="totalPages"
-                        OnPageChanged="HandlePageChangedAsync" />
-        }
     </div>
+
+    @if (totalPages > 1)
+    {
+        <Pagination CurrentPage="currentPage"
+                    TotalPages="totalPages"
+                    OnPageChanged="HandlePageChangedAsync" />
+    }
 }
 
 @code {

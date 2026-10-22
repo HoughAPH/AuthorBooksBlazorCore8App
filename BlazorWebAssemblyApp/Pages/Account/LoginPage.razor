@@ -5,50 +5,38 @@
 @inject ApiAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavManager
 @inject IUserAccount AccountService
-@inject IJSRuntime js
+@inject BlazorWebAssemblyApp.Services.INotificationService NotificationService
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-6">
-            <EditForm Model="User" OnValidSubmit="HandleLogin">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-                <div class="card-header fw-bold">Login to your Account</div>
+<PageTitle>Login</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 col-xl-4">
+        <EditForm Model="User" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Login to your account</div>
                 <div class="card-body">
+                    <ValidationSummary />
 
-                    <div class="form-group mb-3">
-                        <InputText @bind-Value="User.Email"
-                               class="form-control"
-                               type="email"
-                               placeholder="Email Address">
-                           </InputText>
+                    <div class="mb-3">
+                        <label for="LoginEmail" class="form-label">Email address</label>
+                        <InputText id="LoginEmail" @bind-Value="User.Email" class="form-control" type="email" />
                     </div>
 
-                    <div class="form-group">
-                        <div class="input-group mb-3">
-                            <InputText @bind-Value="User.Password"
-                               class="form-control"
-                               type="password"
-                               placeholder="Password"
-                               aria-label="Password"
-                               aria-describedby="Password">
-                            </InputText>
-                        </div>
+                    <div class="mb-3">
+                        <label for="LoginPassword" class="form-label">Password</label>
+                        <InputText id="LoginPassword" @bind-Value="User.Password" class="form-control" type="password" />
                     </div>
 
+                    <button class="btn btn-primary w-100" type="submit">Login</button>
                 </div>
-                <div class="card-footer">
-                    <button class="btn btn-primary float-end"
-                            type="submit">
-                        Login
-                    </button>
-                    <div>
-                        Forgot password
-                        <a href="/ForgotPassword">Click here</a>
-                    </div>
+                <div class="card-footer text-body-secondary">
+                    Forgot your password? <a href="/forgotpassword">Reset it</a>
+                    <br />
+                    New here? <a href="/register">Create an account</a>
                 </div>
-            </EditForm>
-        </div>
+            </div>
+        </EditForm>
     </div>
 </div>
 
@@ -66,6 +54,6 @@
             return;
         }
 
-        await js.InvokeVoidAsync("alert", response.Message);
+        await NotificationService.ShowWarningAsync(response.Message, "Login failed");
     }
 }

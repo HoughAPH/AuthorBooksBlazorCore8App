@@ -2,30 +2,50 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <AuthorizeView Roles="Admin">
-                        <button class="btn btn-primary"> Admin Can Click </button>
-                    </AuthorizeView>
-                    <AuthorizeView Roles="Admin,User">
-                        <button class="btn btn-primary"> Admin/User Can click </button>
-                    </AuthorizeView>
+<PageTitle>Library Books</PageTitle>
+
+<div class="p-5 mb-4 bg-body-tertiary border rounded-3">
+    <h1 class="display-5 fw-bold">Library Books</h1>
+    <p class="fs-5 col-md-8">
+        Manage authors and their books. Browse and search the catalogue, and, as an administrator,
+        add, edit and remove entries.
+    </p>
+
+    <AuthorizeView>
+        <Authorized>
+            <p class="mb-0">
+                Signed in as <strong>@context.User.Identity?.Name</strong>
+                <span class="badge text-bg-secondary ms-1">@(context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "User")</span>
+            </p>
+        </Authorized>
+        <NotAuthorized>
+            <a class="btn btn-primary btn-lg me-2" href="/login">Login</a>
+            <a class="btn btn-outline-secondary btn-lg" href="/register">Sign up</a>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="card-title h4">Books</h2>
+                        <p class="card-text">Search the catalogue by title or author.</p>
+                        <a class="btn btn-primary" href="/books">Browse books</a>
+                    </div>
                 </div>
-                <div class="card-footer">
-                    <AuthorizeView>
-                        <Authorized>
-                            <h3>You are authenticated</h3>
-                            <h3>Your Role is @context.User.Claims.FirstOrDefault(_ => _.Type == ClaimTypes.Role)?.Value</h3>
-                        </Authorized>
-                        <NotAuthorized>
-                            <h3>You are not authorized</h3>
-                        </NotAuthorized>
-                    </AuthorizeView>
+            </div>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2 class="card-title h4">Authors</h2>
+                        <p class="card-text">See every author and the books they have written.</p>
+                        <a class="btn btn-primary" href="/authors">Browse authors</a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </Authorized>
+</AuthorizeView>

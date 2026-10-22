@@ -10,20 +10,24 @@
 
 @if (users is null)
 {
-    <p><em>Loading...</em></p>
+    <div class="d-flex align-items-center gap-2 text-secondary">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span>Loading...</span>
+    </div>
 }
 else
 {
-    <div class="container mt-5">
-        <h3 class="mb-4">Manage Users</h3>
+    <div>
+        <h2 class="mb-3">Manage Users</h2>
 
-        <table class="table table-bordered">
-            <thead>
+        <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Actions</th>
+                    <th scope="col" class="fw-bold">Name</th>
+                    <th scope="col" class="fw-bold">Email</th>
+                    <th scope="col" class="fw-bold">Role</th>
+                    <th scope="col" class="fw-bold">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,7 +37,7 @@ else
                         <td>@user.Name</td>
                         <td>@user.Email</td>
                         <td>
-                            <select class="form-control"
+                            <select class="form-select"
                                     value="@user.Role"
                                     @onchange="@(async e => await OnRoleChangedAsync(user, e.Value?.ToString() ?? user.Role))">
                                 <option value="User">User</option>
@@ -42,7 +46,7 @@ else
                             </select>
                         </td>
                         <td>
-                            <button class="btn btn-danger btn-sm" @onclick="@(async () => await DeleteUserAsync(user.Id))">
+                            <button class="btn btn-outline-danger btn-sm" @onclick="@(async () => await DeleteUserAsync(user.Id))">
                                 Delete
                             </button>
                         </td>
@@ -50,6 +54,7 @@ else
                 }
             </tbody>
         </table>
+        </div>
     </div>
 }
 
